@@ -50,7 +50,7 @@ try:
 except ValueError:
     PORT = 5600
 # גרסת חבילת "שרת מקומי" — משווה מול local-server-version.json (מאגר car-).
-UNBLOCKED_LOCAL_SERVER_VERSION = "1.0.1"
+UNBLOCKED_LOCAL_SERVER_VERSION = "1.0.2"
 REMOTE_LOCAL_SERVER_VERSION_URL = (
     "https://raw.githubusercontent.com/vipogroup/car-/main/local-server-version.json"
 )
@@ -515,6 +515,37 @@ def build_html():
       color: #fff;
       background: rgba(94, 223, 255, 0.2);
     }}
+    .ts-remote-btn {{
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(196, 181, 253, 0.55);
+      background: rgba(139, 92, 246, 0.12);
+      color: #ddd6fe;
+      font-family: var(--font);
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }}
+    .ts-remote-btn:hover {{
+      border-color: #c4b5fd;
+      color: #fff;
+      background: rgba(139, 92, 246, 0.22);
+    }}
+    .ts-help-steps {{
+      margin: 10px 0 0;
+      padding: 0 1.1rem 0 0;
+      font-size: 0.88rem;
+      line-height: 1.55;
+      color: #c3d0d8;
+    }}
+    .ts-help-steps li {{ margin-bottom: 8px; }}
+    .ts-help-links {{ margin: 8px 0 0; padding: 0 1rem 0 0; font-size: 0.86rem; }}
+    .ts-help-links a {{ color: #7ee0ff; font-weight: 700; }}
+    .ts-help-note {{ font-size: 0.8rem; color: #9fb0ba; margin-top: 10px; line-height: 1.45; }}
     .lan-qr-box {{
       display: flex;
       justify-content: center;
@@ -554,7 +585,8 @@ def build_html():
       cursor: pointer;
     }}
     .lan-url-copy-btn:hover {{ border-color: var(--accent); color: var(--accent); }}
-    body.car-mode .lan-phone-btn {{ display: none !important; }}
+    body.car-mode .lan-phone-btn,
+    body.car-mode .ts-remote-btn {{ display: none !important; }}
     .sub-inline {{
       margin: 0;
       font-size: 0.82rem;
@@ -1596,6 +1628,7 @@ def build_html():
           </div>
           <div class="glass-top-actions">
             <button type="button" class="lan-phone-btn" id="lanPhoneBtn" style="display: {lan_btn_display};" title="קוד QR לפתיחה מהטלפון באותה רשת Wi‑Fi">מובייל · סריקת QR</button>
+            <button type="button" class="ts-remote-btn" id="tailscaleHelpBtn" title="הדרכה לחיבור מהטלפון מחוץ לבית דרך Tailscale">מרחוק · Tailscale</button>
             <button type="button" class="hard-refresh-btn" id="hardRefreshBtn" title="טעינה מחדש של הממשק מהשרת (כולל קבצים מעודכנים)">↻ רענון מלא</button>
           </div>
         </div>
@@ -1766,8 +1799,40 @@ def build_html():
     </div>
   </div>
 
+  <div id="tailscaleOverlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="tailscaleTitle">
+    <div class="modal-card" style="max-width: 480px;">
+      <h3 id="tailscaleTitle" style="margin: 0 0 10px;">מרחוק מהבית (Tailscale)</h3>
+      <p class="lan-qr-hint" style="margin-bottom: 8px;">
+        כדי לפתוח את <strong>אותו שרת נגן</strong> מהטלפון <strong>מחוץ ל־Wi‑Fi הביתי</strong> (בלי לפתוח פורט בראוטר), משתמשים ב־<strong>Tailscale</strong>:
+        רשת פרטית מוצפנת בין המחשב לטלפון. הנגן נשאר על המחשב שלך — בדרך־כלל <strong>לא דרך נגן יוטיוב הרגיל</strong> בדפדפן.
+      </p>
+      <ol class="ts-help-steps">
+        <li>התקינו <strong>Tailscale</strong> במחשב ובטלפון, והתחברו <strong>לאותו חשבון</strong>.</li>
+        <li>במחשב השאירו רץ את השרת: <code>start-server-lan.bat</code> (חלון שחור פתוח).</li>
+        <li>באפליקציית Tailscale בטלפון — מצאו את <strong>שם המחשב</strong> והעתיקו את כתובת ה־IPv4 (לרוב מתחילה ב־<code dir="ltr">100.</code>).</li>
+        <li>בטלפון, בדפדפן, פתחו: <code dir="ltr">http://&lt;כתובת-Tailscale-של-המחשב&gt;:{PORT}/</code></li>
+      </ol>
+      <p class="lan-qr-hint" style="margin-top: 10px;">פורט השרת <strong>כאן</strong>: <code dir="ltr">{PORT}</code> · דוגמה להדבקה אחרי שיש לכם IP: <code id="tsUrlTemplate" dir="ltr">http://100.x.x.x:{PORT}/</code>
+        <button type="button" class="lan-url-copy-btn" id="tsTemplateCopyBtn" style="margin-inline-start: 8px;">העתק דוגמה</button>
+      </p>
+      <p style="margin: 10px 0 4px; font-weight: 700; font-size: 0.88rem;">הורדות</p>
+      <ul class="ts-help-links">
+        <li><a href="https://tailscale.com/download/windows" target="_blank" rel="noopener">Windows</a></li>
+        <li><a href="https://tailscale.com/download/mac" target="_blank" rel="noopener">macOS</a></li>
+        <li><a href="https://play.google.com/store/apps/details?id=com.tailscale.ipn" target="_blank" rel="noopener">Android (Play)</a></li>
+        <li><a href="https://apps.apple.com/app/tailscale/id1470499037" target="_blank" rel="noopener">iPhone / iPad</a></li>
+        <li><a href="https://tailscale.com/download" target="_blank" rel="noopener">כל הפלטפורמות</a></li>
+      </ul>
+      <p class="ts-help-note">שימו לב: Tailscale הוא שירות חיצוני (חברה נפרדת). אם אינכם רוצים — המשיכו עם QR / כתובת <code dir="ltr">192.168…</code> באותה Wi‑Fi בלבד.</p>
+      <div class="modal-actions" style="margin-top: 14px; justify-content: flex-start;">
+        <button type="button" class="secondary" id="tailscaleCloseBtn">סגור</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const UNBLOCKED_LAN_URL = {lan_url_json};
+    const UNBLOCKED_SERVER_PORT = {PORT};
     const baseItems = {items_json};
     const video = document.getElementById('video');
     const mediaShell = document.getElementById('mediaShell');
@@ -3330,6 +3395,49 @@ def build_html():
       }}
     }})();
 
+    (function setupTailscaleHelp() {{
+      const btn = document.getElementById('tailscaleHelpBtn');
+      const overlay = document.getElementById('tailscaleOverlay');
+      const closeBtn = document.getElementById('tailscaleCloseBtn');
+      const copyTpl = document.getElementById('tsTemplateCopyBtn');
+      const tplEl = document.getElementById('tsUrlTemplate');
+      if (!btn || !overlay) return;
+      function openTs() {{
+        overlay.classList.add('is-open');
+      }}
+      function closeTs() {{
+        overlay.classList.remove('is-open');
+      }}
+      btn.addEventListener('click', openTs);
+      if (closeBtn) closeBtn.addEventListener('click', closeTs);
+      overlay.addEventListener('click', function (e) {{
+        if (e.target === overlay) closeTs();
+      }});
+      if (copyTpl && tplEl) {{
+        copyTpl.addEventListener('click', function () {{
+          var t = (tplEl.textContent || '').trim();
+          if (!t) return;
+          if (navigator.clipboard && navigator.clipboard.writeText) {{
+            navigator.clipboard.writeText(t).then(function () {{
+              copyTpl.textContent = 'הועתק';
+              setTimeout(function () {{ copyTpl.textContent = 'העתק דוגמה'; }}, 1600);
+            }});
+            return;
+          }}
+          try {{
+            const ta = document.createElement('textarea');
+            ta.value = t;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            copyTpl.textContent = 'הועתק';
+            setTimeout(function () {{ copyTpl.textContent = 'העתק דוגמה'; }}, 1600);
+          }} catch (e) {{}}
+        }});
+      }}
+    }})();
+
     (function pwaInit() {{
       if ('serviceWorker' in navigator) {{
         navigator.serviceWorker.register('/unblocked-sw.js', {{ scope: '/' }}).catch(function () {{}});
@@ -3714,7 +3822,7 @@ def main():
             )
             print("    בדפדפן: לחצי ״מובייל · סריקת QR״ (למעלה) — קוד לפתיחה מהטלפון באותה רשת.")
         print(
-            "גישה מרחוק באינטרנט: השתמשי במנהרה (למשל ngrok, Cloudflare Tunnel) — לא מומלץ לפתוח פורט בראוטר ביתי לכולם."
+            "מחוץ ל-Wi-Fi הבית: בדפדפן לחצי ״מרחוק · Tailscale״ (הדרכה) — או מנהרה (ngrok / Cloudflare Tunnel). לא לפתוח פורט בראוטר לכולם."
         )
     print(
         "לא להריץ 'python -m http.server' על אותו פורט כאן — זה נגן קבצים סטטי, לא השרת הזה."
