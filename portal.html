@@ -3,39 +3,50 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>נגן מוזיקה — כניסה מהדפדפן</title>
+  <title>התקנת נגן למובייל</title>
   <style>
-    body { font-family: system-ui, "Segoe UI", sans-serif; background: #0e1114; color: #e8f0f4; margin: 0; padding: 1.5rem; line-height: 1.55; }
-    main { max-width: 36rem; margin: 0 auto; }
+    body { font-family: system-ui, "Segoe UI", sans-serif; background: #0e1114; color: #e8f0f4; margin: 0; padding: 1.2rem; line-height: 1.55; }
+    main { max-width: 42rem; margin: 0 auto; }
     h1 { font-size: 1.35rem; margin-top: 0; }
     a { color: #7ee0ff; }
     .box { background: #1a2128; border: 1px solid #2a3540; border-radius: 12px; padding: 1rem 1.1rem; margin: 1rem 0; }
-    .btn { display: inline-block; margin-top: 0.5rem; padding: 0.65rem 1rem; background: #2a8fa8; color: #fff; text-decoration: none; border-radius: 10px; font-weight: 600; }
-    .muted { color: #9ab; font-size: 0.92rem; }
+    .btn { display: inline-block; margin-top: 0.6rem; padding: 0.7rem 1rem; background: #2a8fa8; color: #fff; text-decoration: none; border-radius: 10px; font-weight: 700; }
+    .warn { color: #ffd59a; }
+    code { background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 6px; }
   </style>
 </head>
 <body>
   <main>
-    <h1>נגן מוזיקה — גישה מהדפדפן (GitHub Pages)</h1>
-    <p class="muted">הקישור הזה עובד <strong>מכל מקום בעולם</strong> רק אם הופעל <strong>GitHub Pages</strong> בריפו (Settings → Pages → Source: <code>main</code> → folder <code>/ (root)</code>).</p>
+    <h1>נגן למובייל — התקנה אישית לכל משתמש</h1>
 
     <div class="box">
-      <strong>נגן בדפדפן (סטטי)</strong> — PWA/עצמאי, ללא שרת Python. חלק מהיכולות (יוטיוב וכו׳) עשויות להיות מוגבלות בדפדפן.
+      <strong>לינק ציבורי לכל העולם (אחרי הפעלת GitHub Pages):</strong><br />
+      <a href="https://vipogroup.github.io/car-/car-player-standalone.html">https://vipogroup.github.io/car-/car-player-standalone.html</a>
       <br />
-      <a class="btn" href="car-player-standalone.html">פתיחת הנגן</a>
+      <a class="btn" href="car-player-standalone.html">פתח את הנגן עכשיו</a>
     </div>
 
     <div class="box">
-      <strong>המערכת המלאה</strong> (Unblocked, ספרייה, וכו׳) — מחייבת <code>unblocked_player.py</code> על מחשב. הורדה:
-      <br />
-      <a href="https://raw.githubusercontent.com/vipogroup/car-/main/car-music-player.zip">car-music-player.zip</a>
-      (או מעמוד הקבצים ב־<a href="https://github.com/vipogroup/car-">GitHub</a>).
+      <strong>התקנה למסך הבית (כמו אפליקציה):</strong>
+      <ul>
+        <li><strong>Android (Chrome/Edge):</strong> תפריט ⋮ → "התקן אפליקציה" / "הוסף למסך הבית"</li>
+        <li><strong>iPhone (Safari):</strong> שיתוף → "הוסף למסך הבית"</li>
+      </ul>
     </div>
 
-    <p class="muted">כתובות צפויות אחרי הפעלת Pages (דוגמה):<br />
-      <code>https://vipogroup.github.io/car-/portal.html</code><br />
-      <code>https://vipogroup.github.io/car-/car-player-standalone.html</code>
-    </p>
+    <div class="box">
+      <strong>עצמאות לכל משתמש:</strong><br />
+      כל מובייל שומר <strong>שירים + פלייליסטים</strong> בתוך המכשיר שלו.
+      כלומר כל אחד רואה את הרשימה האישית שלו — נפרד מאחרים.
+    </div>
+
+    <div class="box warn">
+      הגרסה הזו סטטית (PWA). המערכת המלאה <code>unblocked_player.py</code> עדיין דורשת שרת Python.
+    </div>
+
+    <div class="box">
+      הורדת החבילה: <a href="https://raw.githubusercontent.com/vipogroup/car-/main/car-music-player.zip">car-music-player.zip</a>
+    </div>
   </main>
 </body>
 </html>
