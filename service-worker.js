@@ -1,7 +1,7 @@
 // Service Worker לשמירה על האפליקציה פעילה ברקע
-const CACHE_NAME = 'car-music-player-v220';
+const CACHE_NAME = 'car-music-player-v221';
 const urlsToCache = [
-  'index.html',
+  'car-player-standalone.html',
   'manifest.json',
   'car-music-icon.png'
 ];
@@ -122,7 +122,7 @@ self.addEventListener('notificationclick', event => {
   event.notification.close();
   
   event.waitUntil(
-    clients.openWindow('index.html')
+    clients.openWindow('car-player-standalone.html')
   );
 });
 

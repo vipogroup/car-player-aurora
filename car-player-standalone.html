@@ -1,4 +1,4 @@
-
+<!-- נגן רכב סטטי (ירוק). קובץ זה: car-player-standalone.html — לא נטען אוטומטית מ-http.server. הממשק החדש: הריצי python unblocked_player.py -->
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -884,6 +884,9 @@
                 <button class="control-btn pill-btn"
                     title="ניהול פלייליסטים" aria-label="ניהול פלייליסטים"
                     onclick="buttonClickEffect(this); openPlaylistManager()">📜</button>
+                <button class="control-btn pill-btn"
+                    title="פתח את השיר ביוטיוב" aria-label="פתח את השיר ביוטיוב"
+                    onclick="buttonClickEffect(this); openCurrentOnYouTube()">▶️ YouTube</button>
                 <button class="control-btn pill-btn" id="nextPlaylistBtn" style="display: none;"
                     title="פלייליסט הבא" aria-label="פלייליסט הבא"
                     onclick="buttonClickEffect(this); nextPlaylist()">⏩</button>
@@ -1027,27 +1030,22 @@
 
         // טעינת פלייליסטים מ-LocalStorage או ברירת מחדל
         const defaultPlaylists = [
-            { name: "🎵 פלייליסט ראשי - נהיגה בכיף 🚗", id: "PLTpkiFPWhsF9JMQmEy4uptvTqanhTQ1Zo" },
-            { name: "🎸 רוק ישראלי 🇮🇱", id: "PLn-Gsrq4vA2s8v3yOixMDxL-cXrmSuxDC" },
-            { name: "🎤 מזרחית מושלמת 💃", id: "PLUFHSF7zKGMutOiQfwU3K2LytQBY8a_hw" },
-            { name: "🎶 פלייליסט 4", id: "PLyoGzIYCpxLgeHw4tFrb5v8AIxhJu-Fae" },
-            { name: "🎧 פלייליסט 5", id: "PL7qAso9Bl0b91xYUe2zEjpSGeWGgrxh6l" },
-            { name: "🎹 פלייליסט 6", id: "PLE9-6gZLvQ0Q2TyoNprRzF1aTzdW8UkM2" },
-            { name: "🎺 פלייליסט 7", id: "PLjCGoHm3d-dkokIl_hZeS6PGj2EpRuWKf" },
-            { name: "🎻 פלייליסט 8", id: "PLwrAS8k0keWQMSTv3nyzhSNEH34NED50E" }
+            { name: "🎬 קישור 1", id: "5CUKHKrZe2s", type: "video" },
+            { name: "🎬 קישור 2", id: "-NV3DA7yokQ", type: "video" },
+            { name: "🎬 קישור 3", id: "pFe1_DNsGpg", type: "video" },
+            { name: "🎬 קישור 4", id: "LWbiOwwiVYU", type: "video" },
+            { name: "🎬 קישור 5", id: "mvhDICxDppQ", type: "video" },
+            { name: "🎬 קישור 6", id: "zOigxsiVKfw", type: "video" },
+            { name: "🎬 קישור 7", id: "1zjVS9DINAA", type: "video" },
+            { name: "🎬 קישור 8", id: "6Jdbu-RVuzI", type: "video" }
         ];
-        
-        // הערה: יש להחליף את ה-Playlist IDs למעלה ב-IDs אמיתיים מ-YouTube
-        // כדי למצוא Playlist ID: פתח פלייליסט ב-YouTube והעתק את הקוד אחרי "list=" בכתובת
-        
-        let playlists = JSON.parse(localStorage.getItem('musicPlaylists')) || defaultPlaylists;
-        
-        // אם יש רק פלייליסט אחד, החזר לברירת מחדל
-        if (playlists.length === 1) {
-            console.log('⚠️ נמצא רק פלייליסט אחד - מחזיר לברירת מחדל');
-            playlists = defaultPlaylists;
-            localStorage.setItem('musicPlaylists', JSON.stringify(playlists));
-        }
+
+        const PLAYLIST_SCHEMA_VERSION = "user-links-only-v1";
+
+        // מצב נעול: בכל טעינה נשארים רק הקישורים שהמשתמש שלח.
+        let playlists = defaultPlaylists;
+        localStorage.setItem('musicPlaylists', JSON.stringify(playlists));
+        localStorage.setItem('musicPlaylistsSchema', PLAYLIST_SCHEMA_VERSION);
         
         console.log(`🎵 נטענו ${playlists.length} פלייליסטים:`, playlists.map(p => p.name));
 
@@ -1055,6 +1053,31 @@
         function savePlaylists() {
             localStorage.setItem('musicPlaylists', JSON.stringify(playlists));
             updatePlaylistNavigation();
+        }
+
+        function removeBlockedCurrentItemAndContinue() {
+            if (!Array.isArray(playlists) || playlists.length === 0) return false;
+
+            const removed = playlists.splice(currentPlaylistIndex, 1)[0];
+            if (removed) {
+                console.warn('🚫 הוסר פריט חסום מהפלייליסט:', removed.name, removed.id);
+            }
+
+            if (playlists.length === 0) {
+                playlists = defaultPlaylists.slice();
+                currentPlaylistIndex = 0;
+                savePlaylists();
+                return false;
+            }
+
+            if (currentPlaylistIndex >= playlists.length) {
+                currentPlaylistIndex = 0;
+            }
+
+            savePlaylists();
+            reloadPlayer();
+            setTimeout(() => playVideo(true), 450);
+            return true;
         }
 
         // עדכון תצוגת כפתורי ניווט פלייליסטים
@@ -1105,6 +1128,34 @@
                 console.warn('⚠️ לא ניתן לקבל מזהה וידאו נוכחי:', err);
             }
             return null;
+        }
+
+        function getCurrentItemSafe() {
+            return playlists && playlists[currentPlaylistIndex] ? playlists[currentPlaylistIndex] : null;
+        }
+
+        function isSingleVideoMode() {
+            const item = getCurrentItemSafe();
+            return !!(item && item.type === 'video');
+        }
+
+        function getCurrentWatchUrl() {
+            const item = getCurrentItemSafe();
+            if (!item) return '';
+            if (item.type === 'video') {
+                return `https://www.youtube.com/watch?v=${encodeURIComponent(item.id)}`;
+            }
+            if (item.type === 'search') {
+                return `https://www.youtube.com/results?search_query=${encodeURIComponent(item.id)}`;
+            }
+            return `https://www.youtube.com/playlist?list=${encodeURIComponent(item.id)}`;
+        }
+
+        function openCurrentOnYouTube() {
+            const url = getCurrentWatchUrl();
+            if (url) {
+                window.open(url, '_blank', 'noopener,noreferrer');
+            }
         }
 
         function updatePlayPauseButton(isPlaying) {
@@ -1641,6 +1692,7 @@
             console.log('יוצר נגן YouTube...');
             const currentItem = playlists[currentPlaylistIndex];
             const isVideo = currentItem.type === 'video';
+            const isSearch = currentItem.type === 'search';
             
             try {
                 // הגדרות שונות לסרטון בודד לעומת פלייליסט
@@ -1655,6 +1707,11 @@
                 if (isVideo) {
                     // סרטון בודד
                     console.log('🎬 טוען סרטון בודד:', currentItem.id);
+                } else if (isSearch) {
+                    // חיפוש אוטומטי ביוטיוב לפי אמן/מילות מפתח
+                    playerVars.listType = 'search';
+                    playerVars.list = currentItem.id;
+                    console.log('🔎 טוען חיפוש YouTube:', currentItem.id);
                 } else {
                     // פלייליסט
                     playerVars.listType = 'playlist';
@@ -1753,9 +1810,11 @@
                 setTimeout(() => {
                     try {
                         const item = playlists[currentPlaylistIndex];
-                        const embedUrl = item.type === 'video' 
+                        const embedUrl = item.type === 'video'
                             ? `https://www.youtube.com/embed/${item.id}?autoplay=0&rel=0&modestbranding=1`
-                            : `https://www.youtube.com/embed/videoseries?list=${item.id}&autoplay=0&rel=0&modestbranding=1`;
+                            : item.type === 'search'
+                                ? `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(item.id)}&autoplay=0&rel=0&modestbranding=1`
+                                : `https://www.youtube.com/embed/videoseries?list=${item.id}&autoplay=0&rel=0&modestbranding=1`;
                         document.getElementById('player').innerHTML = `<iframe width="100%" height="350" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
                     } catch (e) {
                         console.error('ניסיון יצירת נגן גיבוי נכשל:', e);
@@ -1858,6 +1917,7 @@
         // בדיקת פרסומות אגרסיבית במיוחד - מדלג מיד על כל דבר חשוד
         function aggressiveAdCheck() {
             if (!player || !player.getDuration || !player.getPlayerState) return;
+            if (isSingleVideoMode()) return; // בסרטון בודד לא מפעילים אנטי-פרסומות אגרסיבי
             
             try {
                 const playerState = player.getPlayerState();
@@ -1939,6 +1999,12 @@
             hasUserInteracted = true;
             userRequestedStop = false;
 
+            // במצב סרטון בודד, מעבר שיר = מעבר לפריט הבא ברשימה
+            if (isSingleVideoMode()) {
+                nextPlaylist();
+                return;
+            }
+
             prepareAdDetectionForManualSkip();
 
             if (songShuffleEnabled && playNextShuffledSong()) {
@@ -1962,6 +2028,12 @@
 
             hasUserInteracted = true;
             userRequestedStop = false;
+
+            // במצב סרטון בודד, שיר קודם = פריט קודם ברשימה
+            if (isSingleVideoMode()) {
+                previousPlaylist();
+                return;
+            }
 
             prepareAdDetectionForManualSkip();
 
@@ -2044,9 +2116,11 @@
                         if (!player || (player && typeof player.getPlayerState !== 'function')) {
                             console.log('ניסיון לטעון בדרך ישירה');
                             const item = playlists[currentPlaylistIndex];
-                            const embedUrl = item.type === 'video' 
+                            const embedUrl = item.type === 'video'
                                 ? `https://www.youtube.com/embed/${item.id}?autoplay=0&rel=0&modestbranding=1`
-                                : `https://www.youtube.com/embed/videoseries?list=${item.id}&autoplay=0&rel=0&modestbranding=1`;
+                                : item.type === 'search'
+                                    ? `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(item.id)}&autoplay=0&rel=0&modestbranding=1`
+                                    : `https://www.youtube.com/embed/videoseries?list=${item.id}&autoplay=0&rel=0&modestbranding=1`;
                             document.getElementById('player').innerHTML = `<iframe width="100%" height="350" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
 
                             // עדכון שם הפלייליסט גם במצב זה
@@ -2059,9 +2133,11 @@
 
                 // ניסיון אחרון באמצעות הטמעה ישירה ללא autoplay
                 const item = playlists[currentPlaylistIndex];
-                const embedUrl = item.type === 'video' 
+                const embedUrl = item.type === 'video'
                     ? `https://www.youtube.com/embed/${item.id}?autoplay=0&rel=0&modestbranding=1`
-                    : `https://www.youtube.com/embed/videoseries?list=${item.id}&autoplay=0&rel=0&modestbranding=1`;
+                    : item.type === 'search'
+                        ? `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(item.id)}&autoplay=0&rel=0&modestbranding=1`
+                        : `https://www.youtube.com/embed/videoseries?list=${item.id}&autoplay=0&rel=0&modestbranding=1`;
                 document.getElementById('player').innerHTML = `<iframe width="100%" height="350" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
 
                 updatePlaylistName();
@@ -2550,6 +2626,9 @@
         function handlePlayerError(event) {
             const currentSongLabel = document.getElementById('currentSong');
             let message = 'לא ניתן לנגן את השיר הנוכחי.';
+            const currentItem = getCurrentItemSafe();
+            const isVideo = currentItem && currentItem.type === 'video';
+            const isEmbedBlockedError = event.data === 100 || event.data === 101 || event.data === 150;
 
             switch (event.data) {
                 case 2:
@@ -2565,21 +2644,45 @@
                     break;
             }
 
-            currentSongLabel.textContent = message + ' מדלג לשיר הבא...';
+            if (isVideo && isEmbedBlockedError) {
+                const watchUrl = getCurrentWatchUrl();
+                currentSongLabel.innerHTML =
+                    `${message} <a href="${watchUrl}" target="_blank" rel="noopener noreferrer" style="color:#1db954;font-weight:bold;">פתח ביוטיוב</a> או עבור לשיר הבא...`;
 
-            if (!userRequestedStop && player && player.nextVideo && hasUserInteracted) {
+                // פתרון קבוע: מוחקים מהרשימה כל סרטון שחסום להטמעה.
+                // כך הפלייליסט שנשאר במערכת יהיה רק עם סרטונים שעובדים ב-embed.
+                setTimeout(() => {
+                    if (!userRequestedStop) {
+                        const moved = removeBlockedCurrentItemAndContinue();
+                        if (moved) return;
+                    }
+                }, 700);
+            } else {
+                currentSongLabel.textContent = message + ' מדלג לשיר הבא...';
+            }
+
+            if (!userRequestedStop && hasUserInteracted) {
                 setTimeout(() => {
                     if (userRequestedStop) {
                         return;
                     }
                     try {
                         userRequestedStop = false;
-                        player.nextVideo();
-                        setTimeout(() => {
-                            if (player && player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING && !userRequestedStop) {
-                                playVideo();
-                            }
-                        }, 500);
+
+                        // בסרטון בודד, מדלגים לפריט הבא ברשימה (ולא nextVideo של YouTube).
+                        if (isSingleVideoMode()) {
+                            nextPlaylist();
+                            return;
+                        }
+
+                        if (player && player.nextVideo) {
+                            player.nextVideo();
+                            setTimeout(() => {
+                                if (player && player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING && !userRequestedStop) {
+                                    playVideo();
+                                }
+                            }, 500);
+                        }
                     } catch (err) {
                         console.error('ניסיון מעבר לשיר הבא נכשל:', err);
                     }
