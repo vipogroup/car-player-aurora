@@ -1,9 +1,10 @@
 // Service Worker לשמירה על האפליקציה פעילה ברקע
-const CACHE_NAME = 'car-music-player-v221';
+const CACHE_NAME = 'car-music-player-v230';
 const urlsToCache = [
   'car-player-standalone.html',
   'manifest.json',
-  'car-music-icon.png'
+  'car-music-icon.png',
+  'version.json'
 ];
 
 // התקנה
@@ -39,34 +40,52 @@ self.addEventListener('activate', event => {
 
 // טיפול בבקשות
 self.addEventListener('fetch', event => {
-  // רק לבקשות GET
   if (event.request.method !== 'GET') return;
-  
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // החזר מהמטמון אם קיים
-        if (response) {
-          return response;
-        }
-        
-        // אחרת, שלוף מהרשת
-        return fetch(event.request).then(response => {
-          // בדוק אם התשובה תקינה
-          if (!response || response.status !== 200 || response.type === 'error') {
-            return response;
+
+  const url = new URL(event.request.url);
+  const isAppShell =
+    url.pathname.endsWith('/car-player-standalone.html') ||
+    url.pathname.endsWith('/service-worker.js') ||
+    url.pathname.endsWith('/manifest.json') ||
+    url.pathname.endsWith('/version.json') ||
+    url.pathname === '/';
+
+  // קבצי מעטפת ועדכונים: רשת קודם (כדי שלא ייתקעו על גרסה ישנה)
+  if (isAppShell) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          if (response && response.status === 200 && response.type !== 'error') {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache));
           }
-          
-          // שמור במטמון לפעם הבאה
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME)
-            .then(cache => {
-              cache.put(event.request, responseToCache);
-            });
-          
           return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // שאר הקבצים: מטמון קודם ואז רשת
+  event.respondWith(
+    caches.match(event.request).then(response => {
+      if (response) {
+        return response;
+      }
+
+      return fetch(event.request).then(networkResponse => {
+        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type === 'error') {
+          return networkResponse;
+        }
+
+        const responseToCache = networkResponse.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, responseToCache);
         });
-      })
+
+        return networkResponse;
+      });
+    })
   );
 });
 
@@ -127,3 +146,7 @@ self.addEventListener('notificationclick', event => {
 });
 
 console.log('🚀 Service Worker טעון ומוכן');
+
+
+
+

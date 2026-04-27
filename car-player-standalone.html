@@ -997,13 +997,16 @@
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
         // גרסת האפליקציה
-        const APP_VERSION = "2.2.0";
+        const APP_VERSION = "2.3.0";
         console.log(`🎵 נגן מוזיקה לרכב - גרסה ${APP_VERSION}`);
 
         // משתני מערכת עדכונים
         let newServiceWorker = null;
         let updateAvailable = false;
+        let latestVersion = APP_VERSION;
         const AUTO_REFRESH_ON_UPDATE = true; // אילוץ רענון אוטומטי לאחר עדכון
+        const VERSION_ENDPOINT = 'version.json';
+        const VERSION_CHECK_INTERVAL_MS = 3 * 60 * 1000;
         let updatePending = false;
         let refreshing = false;
         let updateListenerAttached = false;
@@ -1040,12 +1043,37 @@
             { name: "🎬 קישור 8", id: "6Jdbu-RVuzI", type: "video" }
         ];
 
-        const PLAYLIST_SCHEMA_VERSION = "user-links-only-v1";
+        const PLAYLIST_SCHEMA_VERSION = "user-links-only-v2";
 
-        // מצב נעול: בכל טעינה נשארים רק הקישורים שהמשתמש שלח.
-        let playlists = defaultPlaylists;
-        localStorage.setItem('musicPlaylists', JSON.stringify(playlists));
-        localStorage.setItem('musicPlaylistsSchema', PLAYLIST_SCHEMA_VERSION);
+        function normalizePlaylists(raw) {
+            if (!Array.isArray(raw)) return [];
+            return raw
+                .map(item => ({
+                    name: String(item?.name || '').trim(),
+                    id: String(item?.id || '').trim(),
+                    type: item?.type === 'playlist' ? 'playlist' : 'video'
+                }))
+                .filter(item => item.name && item.id);
+        }
+
+        // כל משתמש שומר פלייליסטים אישיים במכשיר שלו (LocalStorage)
+        let playlists;
+        try {
+            const schema = localStorage.getItem('musicPlaylistsSchema');
+            const saved = JSON.parse(localStorage.getItem('musicPlaylists') || '[]');
+            const normalized = normalizePlaylists(saved);
+            if (schema === PLAYLIST_SCHEMA_VERSION && normalized.length > 0) {
+                playlists = normalized;
+            } else {
+                playlists = defaultPlaylists.slice();
+                localStorage.setItem('musicPlaylists', JSON.stringify(playlists));
+                localStorage.setItem('musicPlaylistsSchema', PLAYLIST_SCHEMA_VERSION);
+            }
+        } catch (e) {
+            playlists = defaultPlaylists.slice();
+            localStorage.setItem('musicPlaylists', JSON.stringify(playlists));
+            localStorage.setItem('musicPlaylistsSchema', PLAYLIST_SCHEMA_VERSION);
+        }
         
         console.log(`🎵 נטענו ${playlists.length} פלייליסטים:`, playlists.map(p => p.name));
 
@@ -3095,6 +3123,7 @@
 
                 // בדיקת עדכונים מיד לאחר טעינה
                 checkForUpdates();
+                setInterval(checkForUpdates, VERSION_CHECK_INTERVAL_MS);
             });
 
             if (!updateListenerAttached) {
@@ -3110,27 +3139,44 @@
         }
 
         // מערכת עדכונים
-        function updateApp() {
-            console.log('🔄 מתחיל עדכון...');
-            
-            if (newServiceWorker) {
+        async function forceRefreshAfterUpdate() {
+            try {
                 updatePending = true;
-                // שליחת הוראה ל-Service Worker לדלג על מצב המתנה
-                newServiceWorker.postMessage({ type: 'SKIP_WAITING' });
-                
-                const banner = document.getElementById('updateBanner');
-                banner.innerHTML = `
-                    <div style="font-size: 18px; font-weight: bold;">
-                        ⏳ מעדכן את האפליקציה...
-                    </div>
-                    <div style="margin-top: 10px;">
-                        אנא המתן לרענון אוטומטי
-                    </div>
-                `;
-            } else {
-                console.log('⚠️ אין Service Worker חדש זמין');
-                dismissUpdate();
+                const registrations = ('serviceWorker' in navigator)
+                    ? await navigator.serviceWorker.getRegistrations()
+                    : [];
+
+                // מוודא שגרסה ממתינה עוברת להיות פעילה
+                for (const registration of registrations) {
+                    if (registration.waiting) {
+                        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                    }
+                }
+
+                // נקה רק מטמון PWA כדי להביא HTML/JS/CSS חדשים
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                }
+            } catch (err) {
+                console.warn('⚠️ forceRefreshAfterUpdate issue:', err);
+            } finally {
+                const u = new URL(window.location.href);
+                u.searchParams.set('v', Date.now().toString());
+                window.location.replace(u.toString());
             }
+        }
+
+        async function updateApp() {
+            console.log('🔄 מתחיל עדכון...');
+            const banner = document.getElementById('updateBanner');
+            if (banner) {
+                banner.innerHTML = `
+                    <div style="font-size: 18px; font-weight: bold;">⏳ מעדכן את האפליקציה...</div>
+                    <div style="margin-top: 10px;">טוען את כל הקבצים החדשים</div>
+                `;
+            }
+            await forceRefreshAfterUpdate();
         }
         
         function dismissUpdate() {
@@ -3149,16 +3195,14 @@
             banner.style.display = 'block';
             updateAvailable = true;
             
-            // עדכן את הודעת הבאנר עם גרסת האפליקציה
             const versionInfo = banner.querySelector('.version-info');
             if (versionInfo) {
-                versionInfo.textContent = `גרסה ${APP_VERSION}`;
+                versionInfo.textContent = `גרסה מותקנת: ${APP_VERSION} · גרסה חדשה: ${latestVersion}`;
             }
             
-            // התראה אם הדפדפן תומך
             if ('Notification' in window && Notification.permission === 'granted') {
                 new Notification('🔄 עדכון זמין!', {
-                    body: 'גרסה חדשה של נגן המוזיקה זמינה לעדכון',
+                    body: `גרסה חדשה זמינה: ${latestVersion}`,
                     icon: 'car-music-icon.png',
                     tag: 'update',
                     requireInteraction: false
@@ -3166,7 +3210,24 @@
             }
         }
 
+        async function checkRemoteVersion() {
+            try {
+                const r = await fetch(`${VERSION_ENDPOINT}?t=${Date.now()}`, { cache: 'no-store' });
+                if (!r.ok) return;
+                const meta = await r.json();
+                const remote = String(meta.appVersion || '').trim();
+                if (!remote) return;
+                latestVersion = remote;
+                if (remote !== APP_VERSION) {
+                    showUpdateBanner();
+                }
+            } catch (e) {
+                console.warn('⚠️ בדיקת version.json נכשלה:', e);
+            }
+        }
+
         function checkForUpdates() {
+            checkRemoteVersion();
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistration().then(registration => {
                     if (!registration) return;
@@ -3176,12 +3237,7 @@
                     if (registration.waiting) {
                         newServiceWorker = registration.waiting;
                         if (AUTO_REFRESH_ON_UPDATE) {
-                            console.log('🔄 Service Worker ממתין - מאלץ רענון!');
-                            updatePending = true;
-                            newServiceWorker.postMessage({ type: 'SKIP_WAITING' });
-                            setTimeout(() => {
-                                window.location.reload();
-                            }, 500);
+                            updateApp();
                         } else {
                             showUpdateBanner();
                         }
@@ -3194,13 +3250,7 @@
                             if (newServiceWorker.state === 'installed') {
                                 if (navigator.serviceWorker.controller) {
                                     if (AUTO_REFRESH_ON_UPDATE) {
-                                        console.log('🔄 רענון אוטומטי מאולץ - מעדכן עכשיו!');
-                                        updatePending = true;
-                                        newServiceWorker.postMessage({ type: 'SKIP_WAITING' });
-                                        // המתן קצר ואז רענן
-                                        setTimeout(() => {
-                                            window.location.reload();
-                                        }, 500);
+                                        updateApp();
                                     } else {
                                         showUpdateBanner();
                                     }
@@ -3652,6 +3702,14 @@
 
 </body>
 </html>
+
+
+
+
+
+
+
+
 
 
 
