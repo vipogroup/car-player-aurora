@@ -1832,7 +1832,6 @@ def build_html():
 
   <script>
     const UNBLOCKED_LAN_URL = {lan_url_json};
-    const UNBLOCKED_SERVER_PORT = {PORT};
     const baseItems = {items_json};
     const video = document.getElementById('video');
     const mediaShell = document.getElementById('mediaShell');
