@@ -50,7 +50,7 @@ try:
 except ValueError:
     PORT = 5600
 # גרסת חבילת "שרת מקומי" — משווה מול local-server-version.json (מאגר car-).
-UNBLOCKED_LOCAL_SERVER_VERSION = "1.0.0"
+UNBLOCKED_LOCAL_SERVER_VERSION = "1.0.1"
 REMOTE_LOCAL_SERVER_VERSION_URL = (
     "https://raw.githubusercontent.com/vipogroup/car-/main/local-server-version.json"
 )
