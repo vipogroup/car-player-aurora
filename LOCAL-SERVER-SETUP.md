@@ -15,3 +15,7 @@
 
 - PC must stay on while using the phone with the local server.
 - The QR encodes the LAN URL; it does not work from mobile data only (different network).
+
+## Outside home Wi‑Fi (optional): Tailscale
+
+After the server is running, open the player in the browser on the PC and click **"מרחוק · Tailscale"** for short setup steps and download links. You then open `http://<Tailscale-IP-of-PC>:<port>/` on the phone from anywhere (encrypted). This does **not** replace installing Tailscale once on both devices.
