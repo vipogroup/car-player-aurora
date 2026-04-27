@@ -51,7 +51,7 @@ SCRIPT_FILE = os.path.abspath(__file__)
 SERVER_LOADED_MTIME = int(os.path.getmtime(SCRIPT_FILE))
 
 # Service Worker (PWA — "התקנה" למסך הבית). עדכן מספר אם משנים לוגיקת מטמון.
-UNBLOCKED_PWA_VERSION = 1
+UNBLOCKED_PWA_VERSION = 2
 UNBLOCKED_SW_SOURCE = """
 const UNBLOCKED_PWA_VERSION = %d;
 const CACHE = 'unblocked-pwa-v' + UNBLOCKED_PWA_VERSION;
@@ -1350,7 +1350,7 @@ def build_html():
     .ui-version-strip-link:hover {{ color: #fff; }}
 
     body.car-mode .ui-version-strip {{ display: none; }}
-    body.car-mode .pwa-install-hint {{ display: none !important; }}
+    body.car-mode .pwa-install-modal {{ display: none !important; }}
     body.car-mode .bottom-nav {{ display: none; }}
 
     .code-stale-banner {{
@@ -1365,32 +1365,58 @@ def build_html():
       line-height: 1.45;
     }}
 
-    .pwa-install-hint {{
+    .pwa-install-modal {{
+      position: fixed;
+      inset: 0;
+      z-index: 25000;
       display: none;
       align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      flex-wrap: wrap;
-      background: linear-gradient(90deg, #1a2a33, #122028);
-      color: #d4f2ff;
-      padding: 10px 14px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      text-align: right;
-      border-bottom: 1px solid rgba(94, 223, 255, 0.25);
-      line-height: 1.4;
+      justify-content: center;
+      padding: 20px 16px;
+      box-sizing: border-box;
     }}
-    .pwa-install-hint code {{ font-size: 0.78em; color: #a8e9ff; }}
-    .pwa-hint-x {{
-      flex-shrink: 0;
-      min-width: 36px;
-      min-height: 36px;
-      border: none;
+    .pwa-install-modal.is-open {{ display: flex; }}
+    .pwa-install-modal-backdrop {{
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+    }}
+    .pwa-install-card {{
+      position: relative;
+      z-index: 1;
+      width: min(400px, 100%);
+      max-height: 90vh;
+      overflow: auto;
+      border-radius: 16px;
+      background: #151a1f;
+      border: 1px solid var(--spot-border);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+      padding: 1.1rem 1.15rem 1.05rem;
+      text-align: right;
+    }}
+    .pwa-install-card h2 {{ margin: 0 0 10px; font-size: 1.12rem; font-weight: 800; color: #fff; }}
+    .pwa-install-card p {{ margin: 0; font-size: 0.9rem; line-height: 1.5; color: #c8d6df; font-weight: 500; }}
+    .pwa-install-card code {{ font-size: 0.8em; color: #7ee0ff; }}
+    .pwa-install-actions {{ display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 16px; }}
+    .pwa-install-actions button {{
+      min-height: 44px;
+      padding: 10px 16px;
       border-radius: 10px;
-      background: rgba(0,0,0,0.35);
-      color: #fff;
-      font-size: 1.1rem;
+      font-family: var(--font);
+      font-size: 0.9rem;
+      font-weight: 700;
       cursor: pointer;
+      border: 1px solid var(--spot-border);
+    }}
+    .pwa-install-primary {{
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #0a0e12;
+    }}
+    .pwa-install-secondary {{
+      background: transparent;
+      color: #e0eef4;
     }}
   </style>
 </head>
@@ -1407,9 +1433,16 @@ def build_html():
     עצורי את השרת (Ctrl+C בחלון הטרמינל) והפעילי שוב:
     <code>python unblocked_player.py</code>
   </div>
-  <div class="pwa-install-hint" id="pwaInstallHint" role="status" aria-label="התקנה למסך הבית">
-    <span>נגן על המובייל: <strong>הוספה למסך הבית</strong> — <span dir="ltr">Android: ⋮ → התקן / הוסף</span> · <span dir="ltr">iPhone: שיתוף → הוסף למסך הבית</span> (רצוי להפעיל עם <code>UNBLOCKED_PLAYER_HOST=0.0.0.0</code> / <code>start-server-lan</code>)</span>
-    <button type="button" class="pwa-hint-x" id="pwaHintClose" title="סגור">×</button>
+  <div id="pwaInstallModal" class="pwa-install-modal" role="dialog" aria-modal="true" aria-labelledby="pwaModalTitle" hidden>
+    <div class="pwa-install-modal-backdrop" data-pwa-dismiss="1" aria-hidden="true"></div>
+    <div class="pwa-install-card" role="document">
+      <h2 id="pwaModalTitle">להתקין את הנגן על הטלפון?</h2>
+      <p id="pwaModalBody">אפשר להוסיף קיצור דרך על מסך הבית ולפתוח את המערכת כמו אפליקציה.</p>
+      <div class="pwa-install-actions">
+        <button type="button" class="pwa-install-secondary" id="pwaModalDecline" data-pwa-dismiss="1">לא עכשיו</button>
+        <button type="button" class="pwa-install-primary" id="pwaModalConfirm">התקן / הוסף</button>
+      </div>
+    </div>
   </div>
   <div class="app-root">
     <aside class="spot-sidebar" id="appSidebar" aria-label="ניווט ראשי">
@@ -3089,23 +3122,106 @@ def build_html():
       if ('serviceWorker' in navigator) {{
         navigator.serviceWorker.register('/unblocked-sw.js', {{ scope: '/' }}).catch(function () {{}});
       }}
-      var isStandalone =
-        (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
-        window.navigator.standalone === true;
-      var hint = document.getElementById('pwaInstallHint');
-      if (hint && !isStandalone) {{
-        var isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        if (isMobile) {{
-          try {{ if (localStorage.getItem('pwaHintDismissed') === '1') return; }} catch (e) {{}}
-          hint.style.display = 'flex';
-        }}
+      var PWA_DISMISS = 'pwaInstallModalDismissed';
+      var installPromptEvent = null;
+      var pwaModalShown = false;
+      var modal = document.getElementById('pwaInstallModal');
+      var modalTitle = document.getElementById('pwaModalTitle');
+      var modalBody = document.getElementById('pwaModalBody');
+      var btnConfirm = document.getElementById('pwaModalConfirm');
+      var btnDecline = document.getElementById('pwaModalDecline');
+
+      function isDismissed() {{
+        try {{ return localStorage.getItem(PWA_DISMISS) === '1'; }} catch (e) {{ return false; }}
       }}
-      var c = document.getElementById('pwaHintClose');
-      if (c && hint) {{
-        c.addEventListener('click', function () {{
-          hint.style.display = 'none';
-          try {{ localStorage.setItem('pwaHintDismissed', '1'); }} catch (e) {{}}
+      function setDismissed() {{
+        try {{ localStorage.setItem(PWA_DISMISS, '1'); }} catch (e) {{}}
+      }}
+      function mobileOk() {{
+        return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      }}
+      function standaloneOk() {{
+        return (
+          (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+          window.navigator.standalone === true
+        );
+      }}
+      var isIOS =
+        /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+      function closeModal() {{
+        if (!modal) return;
+        modal.classList.remove('is-open');
+        modal.setAttribute('hidden', '');
+        pwaModalShown = false;
+      }}
+      function openModal(native) {{
+        if (!modal || !modalTitle || !modalBody || !btnConfirm || !btnDecline) return;
+        if (isDismissed() || standaloneOk()) return;
+        pwaModalShown = true;
+        modal.removeAttribute('hidden');
+        modal.classList.add('is-open');
+        if (native && installPromptEvent) {{
+          modalTitle.textContent = 'להתקין את הנגן על הטלפון?';
+          modalBody.innerHTML =
+            'הדפדפן יכול להוסיף אייקון על <strong>מסך הבית</strong> — נוח לפתיחה מהירה כשהמחשב שרץ את השרת דולק.';
+          btnConfirm.textContent = 'כן, התקן';
+          btnConfirm.style.display = '';
+        }} else {{
+          modalTitle.textContent = 'להוסיף את הנגן למסך הבית?';
+          if (isIOS) {{
+            modalBody.innerHTML =
+              'ב־<strong>Safari</strong>: לחצי על <span dir="ltr">שיתוף</span> (↑) ואז <strong>הוסף למסך הבית</strong>.';
+          }} else {{
+            modalBody.innerHTML =
+              'ב־Chrome/Edge: תפריט <span dir="ltr">⋮</span> → <strong>התקן אפליקציה</strong> / <strong>הוסף למסך הבית</strong>. אם אין כפתור — ייתכן שרשת HTTP (לא HTTPS) מגבילה; אפשר עדיין להוסיף קיצור דרך מהתפריט.';
+          }}
+          btnConfirm.textContent = 'הבנתי';
+          btnConfirm.style.display = '';
+        }}
+        btnConfirm.onclick = function () {{
+          if (native && installPromptEvent) {{
+            var p = installPromptEvent;
+            installPromptEvent = null;
+            p.prompt();
+            p.userChoice.then(function () {{ setDismissed(); closeModal(); }}).catch(function () {{ setDismissed(); closeModal(); }});
+          }} else {{
+            setDismissed();
+            closeModal();
+          }}
+        }};
+      }}
+      btnDecline.addEventListener('click', function () {{
+        setDismissed();
+        closeModal();
+      }});
+      if (modal) {{
+        modal.addEventListener('click', function (e) {{
+          if (e.target && e.target.getAttribute && e.target.getAttribute('data-pwa-dismiss')) {{
+            setDismissed();
+            closeModal();
+          }}
         }});
+      }}
+
+      window.addEventListener('beforeinstallprompt', function (e) {{
+        e.preventDefault();
+        installPromptEvent = e;
+        if (isDismissed() || standaloneOk() || !mobileOk()) return;
+        openModal(true);
+      }});
+
+      if (isIOS && mobileOk() && !standaloneOk() && !isDismissed()) {{
+        setTimeout(function () {{
+          if (isDismissed() || standaloneOk() || pwaModalShown) return;
+          openModal(false);
+        }}, 450);
+      }} else if (!isIOS) {{
+        setTimeout(function () {{
+          if (isDismissed() || standaloneOk() || !mobileOk() || pwaModalShown) return;
+          if (!installPromptEvent) openModal(false);
+        }}, 1800);
       }}
     }})();
 
