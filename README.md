@@ -1,38 +1,56 @@
-# נגן מוזיקה לרכב 🎶🚗
+# נגן מוזיקה לרכב — מערכת Unblocked (מומלץ) 🎶🚗
 
-## הוראות הפעלה
+Repository: [github.com/vipogroup/car-](https://github.com/vipogroup/car-)
 
-### דרך 1: שרת מקומי (מומלץ)
-1. פתח טרמינל בתיקיית הפרויקט
-2. הרץ שרת פשוט:
-   ```
-   python -m http.server 5500
-   ```
-3. פתח בדפדפן: `http://localhost:5500/index.html`
-4. לחץ על כפתור ▶️ כדי להתחיל לנגן
+## מערכת חדשה: `unblocked_player.py` (Python + `yt-dlp`)
 
-### דרך 2: פתיחה ישירה (מוגבל)
-- פתח את `index.html` ישירות בדפדפן
-- **שים לב:** Chrome עשוי לחסום את YouTube בגלל מדיניות CORS
+הנגן המלא (ספרייה, אהובים, פלייליסטים, YouTube) רץ כשרת HTTP מקומי על **פורט 5600**.
 
-## כפתורי שליטה
-- ▶️ - הפעלה
-- ⏸ - השהיה
-- ⏮ - שיר קודם
-- ⏭ - שיר הבא
-- 🌙/☀️ - מעבר בין מצב יום/לילה
-- 🔊 - בקרת עוצמת שמע
+### דרישות
+- Python 3.10+ מומלץ
+- `pip install -r requirements.txt` (למשל `yt-dlp`)
 
-## קבצים במערכת
-- `index.html` - קובץ הנגן הראשי
-- `manifest.json` - הגדרות PWA
-- `car-music-icon.png` - אייקון האפליקציה
-- `README.md` - קובץ זה
+### הפעלה
+1. פתחי טרמינל בתיקיית הפרויקט.
+2. אחת האפשרויות:
+   - **`start-server.bat`** — משחררת את פורט 5600 אם תפוס, מפעילה את השרת ואופציונית פותחת דפדפן
+   - **`restart-player.ps1`** (PowerShell) — ריסטארט בטוח, בלי `taskkill` ידני
+   - **`start-unblocked-player.bat`** — השרת בלבד (ללא שינוי `OPEN_BROWSER` חיצוני)
+   - `python -u unblocked_player.py`
+3. בדפדפן: **http://127.0.0.1:5600/**  
+4. בדיקה שהשרת הנכון רץ: **http://127.0.0.1:5600/__player_check** — אמור להחזיר `OK_UNBLOCKED_PLAYER_V5`
 
-## פלייליסט
-הנגן מכיל פלייליסט אחד: "נהיגה בכיף 🚗"
+אם הדף נראה ישן, נסי **רענון קשיח** (`Ctrl+F5`).
 
-## התקנה למסך הבית (PWA)
-1. פתח את האתר בדפדפן נייד
-2. לחץ על "הוסף למסך הבית"
-3. האפליקציה תפעל כאפליקציה עצמאית
+### חבילה `car-music-player.zip`
+מכילה את קבצי הפרויקט לעבודה ללא `git` (יוצר בבריאת הגרסה; נשמר גם ב-repo).
+
+---
+
+## מצבים נוספים (אופציונלי)
+
+### נגן סטטי (ללא `unblocked`)
+- `index.html` / `python -m http.server` — **מוגבל** (CORS/YouTube).
+- `car-player-standalone.html` — גרסת עמית עצמאית, מתאים ל-`manifest.json` (PWA).
+
+### PWA
+- `manifest.json` + `car-music-icon.png` + `service-worker.js`
+- `start_url` מצביע ל־`car-player-standalone.html` (מצב legacy).
+
+## קבצים עיקריים
+| קובץ | תפקיד |
+|------|--------|
+| `unblocked_player.py` | שרת + ממשק ראשי |
+| `requirements.txt` | תלויות Python |
+| `start-server.bat` / `restart-player.ps1` | הפעלה/ריסטארט |
+| `car-player-standalone.html` | נגן PWA/סטאנדאלון (legacy) |
+| `index.html` | נגן סטטי ישן (אופציוני) |
+| `README.md` | המסמך הזה |
+
+---
+
+## כפתורי שליטה (נגן Unblocked)
+הממשק כולל ניגון, רשימה, אהובים, פלייליסטים, מצב רכב, חיפוש YouTube (בהתאם לגירסה). פרטים בממשק.
+
+## רישיון
+שימוש פנימי/פרויקט — לפי מדיניות הארגון.

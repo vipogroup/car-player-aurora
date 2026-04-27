@@ -1,7 +1,7 @@
 // Service Worker לשמירה על האפליקציה פעילה ברקע
-const CACHE_NAME = 'car-music-player-v231';
+const CACHE_NAME = 'car-music-player-v221';
 const urlsToCache = [
-  'index.html',
+  'car-player-standalone.html',
   'manifest.json',
   'car-music-icon.png'
 ];
@@ -37,35 +37,35 @@ self.addEventListener('activate', event => {
   return self.clients.claim();
 });
 
-// טיפול בבקשות - אסטרטגיית Network First
+// טיפול בבקשות
 self.addEventListener('fetch', event => {
   // רק לבקשות GET
   if (event.request.method !== 'GET') return;
   
   event.respondWith(
-    // נסה קודם מהרשת (Network First)
-    fetch(event.request)
+    caches.match(event.request)
       .then(response => {
-        // בדוק אם התשובה תקינה
-        if (!response || response.status !== 200) {
-          // אם הרשת נכשלה, נסה מה-cache
-          return caches.match(event.request).then(cachedResponse => {
-            return cachedResponse || response;
-          });
+        // החזר מהמטמון אם קיים
+        if (response) {
+          return response;
         }
         
-        // שמור במטמון לפעם הבאה
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME)
-          .then(cache => {
-            cache.put(event.request, responseToCache);
-          });
-        
-        return response;
-      })
-      .catch(() => {
-        // אם אין רשת, החזר מה-cache
-        return caches.match(event.request);
+        // אחרת, שלוף מהרשת
+        return fetch(event.request).then(response => {
+          // בדוק אם התשובה תקינה
+          if (!response || response.status !== 200 || response.type === 'error') {
+            return response;
+          }
+          
+          // שמור במטמון לפעם הבאה
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME)
+            .then(cache => {
+              cache.put(event.request, responseToCache);
+            });
+          
+          return response;
+        });
       })
   );
 });
@@ -122,7 +122,7 @@ self.addEventListener('notificationclick', event => {
   event.notification.close();
   
   event.waitUntil(
-    clients.openWindow('index.html')
+    clients.openWindow('car-player-standalone.html')
   );
 });
 

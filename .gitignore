@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+*.zip.bak
+.DS_Store
+Thumbs.db
+github_version.html
