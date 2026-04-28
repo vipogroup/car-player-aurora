@@ -65,14 +65,18 @@ OFFLINE_DIR = os.path.join(SCRIPT_DIR, "offline_library")
 _offline_lock = threading.Lock()
 
 # Service Worker (PWA — "התקנה" למסך הבית). עדכן מספר אם משנים לוגיקת מטמון.
-UNBLOCKED_PWA_VERSION = 3
+UNBLOCKED_PWA_VERSION = 4
 UNBLOCKED_SW_SOURCE = """
 const UNBLOCKED_PWA_VERSION = %d;
 const CACHE = 'unblocked-pwa-v' + UNBLOCKED_PWA_VERSION;
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE).then((cache) =>
-      cache.addAll(['/manifest.json', '/car-music-icon.png', '/unblocked-sw.js'])
+      cache.addAll([
+        new URL('manifest.json', self.location).href,
+        new URL('car-music-icon.png', self.location).href,
+        new URL('unblocked-sw.js', self.location).href,
+      ])
     )
   );
   self.skipWaiting();
@@ -100,13 +104,13 @@ self.addEventListener('fetch', (event) => {
   if (u.origin !== self.location.origin) {
     return;
   }
-  if (event.request.mode === 'navigate' || u.pathname === '/') {
+  if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request, { cache: 'no-store' })
     );
     return;
   }
-  if (u.pathname.startsWith('/api/')) {
+  if (u.pathname.includes('/api/')) {
     event.respondWith(fetch(event.request, { cache: 'no-store' }));
     return;
   }
@@ -177,9 +181,9 @@ def unblocked_pwa_manifest_json() -> str:
             "name": "מוזיקה Unblocked",
             "short_name": "מוזיקה",
             "description": "נגן YouTube (ספרייה, אהובים, פלייליסטים)",
-            "start_url": "/",
-            "scope": "/",
-            "id": "/",
+            "start_url": "./",
+            "scope": "./",
+            "id": "unblocked-player",
             "display": "standalone",
             "display_override": ["standalone", "fullscreen", "minimal-ui"],
             "background_color": "#121212",
@@ -188,13 +192,13 @@ def unblocked_pwa_manifest_json() -> str:
             "lang": "he",
             "icons": [
                 {
-                    "src": "/car-music-icon.png",
+                    "src": "car-music-icon.png",
                     "sizes": "192x192",
                     "type": "image/png",
                     "purpose": "any",
                 },
                 {
-                    "src": "/car-music-icon.png",
+                    "src": "car-music-icon.png",
                     "sizes": "512x512",
                     "type": "image/png",
                     "purpose": "maskable",
@@ -273,15 +277,15 @@ def build_html():
   <meta name="player-build" content="{SERVER_LOADED_MTIME}" />
   <meta name="player-disk-mtime" content="{disk_mtime}" />
   <title>מוזיקה v5 · נגן YouTube</title>
-  <link rel="manifest" href="/manifest.json" />
+  <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#5edfff" />
   <meta name="color-scheme" content="dark" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="מוזיקה" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <link rel="icon" type="image/png" href="/car-music-icon.png" />
-  <link rel="apple-touch-icon" href="/car-music-icon.png" />
+  <link rel="icon" type="image/png" href="car-music-icon.png" />
+  <link rel="apple-touch-icon" href="car-music-icon.png" />
   <meta name="app-ui" content="v5-nav-home-playlists" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -2598,7 +2602,7 @@ def build_html():
   <div class="ui-version-strip" role="status">
     <strong>ממשק v5</strong>
     <span class="ui-version-strip-mid">דף הבית · הספרייה שלי · אהובים · פלייליסטים בסרגל · אם לא רואים — לחצי ״בדיקת שרת״</span>
-    <a class="ui-version-strip-link" href="/__player_check" target="_blank" rel="noopener">בדיקת שרת</a>
+    <a class="ui-version-strip-link" href="__player_check" target="_blank" rel="noopener">בדיקת שרת</a>
     <button type="button" class="ui-version-strip-btn btn-leading-icon" id="stripReloadBtn" title="טעינה מחדש מהשרת">
       <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
       <span>רענון</span>
@@ -2646,7 +2650,7 @@ def build_html():
         <div class="glass-top-row">
           <div class="glass-top-text">
             <p class="sub-inline build-line">גרסת שרת: <strong>{SERVER_LOADED_MTIME}</strong>
-              · <a href="/?v={SERVER_LOADED_MTIME}">קישור לרענון</a>
+              · <a href="?v={SERVER_LOADED_MTIME}">קישור לרענון</a>
               · אימות: כותרת <code>X-Unblocked-Player</code> בכלי רשת.</p>
             <div id="glassTopSearchHost" class="glass-top-search-host">
               <div id="globalSearchWrap" class="global-search-wrap">
@@ -3024,6 +3028,20 @@ def build_html():
   </div>
 
   <script>
+    const API_BASE = (() => {{
+      try {{
+        const p = window.location.pathname || '';
+        const i = p.lastIndexOf('/');
+        return i > 0 ? p.slice(0, i) : '';
+      }} catch (e) {{
+        return '';
+      }}
+    }})();
+    function apiUrl(path) {{
+      const tail = String(path || '');
+      const p = tail.startsWith('/') ? tail : '/' + tail;
+      return (API_BASE || '') + p;
+    }}
     const UNBLOCKED_LAN_URL = {lan_url_json};
     const baseItems = {items_json};
     const video = document.getElementById('video');
@@ -3326,7 +3344,7 @@ def build_html():
       if (ytSearchPageSubEl) ytSearchPageSubEl.textContent = 'מחפש ביוטיוב...';
       if (ytSearchPageListEl) ytSearchPageListEl.innerHTML = '<div class="gs-empty">מחפש ביוטיוב...</div>';
       try {{
-        const r = await fetch(`/api/search?q=${{encodeURIComponent(q)}}`, {{ cache: 'no-store' }});
+        const r = await fetch(apiUrl(`/api/search?q=${{encodeURIComponent(q)}}`), {{ cache: 'no-store' }});
         if (!r.ok) throw new Error(`HTTP ${{r.status}}`);
         const data = await r.json();
         if (reqId !== globalSearchReqSeq) return;
@@ -4234,7 +4252,7 @@ def build_html():
       if (!offlinePanelListEl) return;
       offlinePanelListEl.innerHTML = '<div class="queue-empty">טוען...</div>';
       try {{
-        const r = await fetch('/api/offline_list', {{ cache: 'no-store' }});
+        const r = await fetch(apiUrl('/api/offline_list'), {{ cache: 'no-store' }});
         const data = await r.json();
         const tracks = Array.isArray(data.tracks) ? data.tracks : [];
         if (!tracks.length) {{
@@ -4279,7 +4297,7 @@ def build_html():
       video.removeAttribute('src');
       try {{ video.load(); }} catch (e) {{}}
       try {{
-        const r = await fetch('/api/offline_stream?vid=' + encodeURIComponent(clean), {{ cache: 'no-store' }});
+        const r = await fetch(apiUrl('/api/offline_stream?vid=' + encodeURIComponent(clean)), {{ cache: 'no-store' }});
         const data = await r.json();
         if (!r.ok || data.error) throw new Error(data.error || ('HTTP ' + r.status));
         offlinePlayingVid = clean;
@@ -4289,7 +4307,9 @@ def build_html():
           npArtwork.alt = String(data.title || '');
         }}
         const rel = String(data.stream_url || '');
-        video.src = rel.startsWith('/') ? (window.location.origin + rel) : rel;
+        video.src = rel.startsWith('/')
+          ? (window.location.origin + (API_BASE || '') + rel)
+          : rel;
         try {{ await video.play(); }} catch (e) {{}}
         setStatus('ניגון מהשמורים אצל השרת');
         const ix = items.findIndex((it) => getYoutubeIdFromItem(it) === clean);
@@ -4666,7 +4686,7 @@ def build_html():
       ytResultsEl.style.display = 'block';
       ytResultsEl.innerHTML = '<div class="yt-title">מחפש ביוטיוב...</div>';
       try {{
-        const r = await fetch(`/api/search?q=${{encodeURIComponent(q)}}`, {{ cache: 'no-store' }});
+        const r = await fetch(apiUrl(`/api/search?q=${{encodeURIComponent(q)}}`), {{ cache: 'no-store' }});
         if (!r.ok) throw new Error(`HTTP ${{r.status}}`);
         const data = await r.json();
         const results = Array.isArray(data.results) ? data.results : [];
@@ -4737,7 +4757,7 @@ def build_html():
       autoDjBusy = true;
       try {{
         const q = autoDjSeedQuery();
-        const r = await fetch(`/api/search?q=${{encodeURIComponent(q)}}`, {{ cache: 'no-store' }});
+        const r = await fetch(apiUrl(`/api/search?q=${{encodeURIComponent(q)}}`), {{ cache: 'no-store' }});
         if (!r.ok) return 0;
         const data = await r.json();
         const results = Array.isArray(data.results) ? data.results : [];
@@ -4792,7 +4812,7 @@ def build_html():
       const t = setTimeout(() => ac.abort(), STREAM_TIMEOUT_MS);
       try {{
         const targetUrl = encodeURIComponent(item.url || '');
-        const r = await fetch(`/api/stream?i=${{idx}}&quality=${{encodeURIComponent(q)}}&url=${{targetUrl}}`, {{
+        const r = await fetch(apiUrl(`/api/stream?i=${{idx}}&quality=${{encodeURIComponent(q)}}&url=${{targetUrl}}`), {{
           cache: 'no-store',
           signal: ac.signal,
         }});
@@ -5003,7 +5023,7 @@ def build_html():
       }}
       const q = activeQuality();
       const targetUrl = encodeURIComponent(item.url || '');
-      const u = `/api/download_track?i=${{idx}}&quality=${{encodeURIComponent(q)}}&url=${{targetUrl}}`;
+      const u = apiUrl(`/api/download_track?i=${{idx}}&quality=${{encodeURIComponent(q)}}&url=${{targetUrl}}`);
       setStatus('מכין הורדה...');
       try {{
         const a = document.createElement('a');
@@ -5029,7 +5049,7 @@ def build_html():
         }}
         const q = activeQuality();
         const targetUrl = encodeURIComponent(item.url || '');
-        const u = `/api/offline_save?i=${{idx}}&quality=${{encodeURIComponent(q)}}&url=${{targetUrl}}`;
+        const u = apiUrl(`/api/offline_save?i=${{idx}}&quality=${{encodeURIComponent(q)}}&url=${{targetUrl}}`);
         saveOfflineBtn.disabled = true;
         setStatus('שומרת אצל השרת... (עשוי לקחת דקות לפי גודל השיר)');
         try {{
@@ -5382,7 +5402,7 @@ def build_html():
           const vid = delBtn.getAttribute('data-offline-del') || '';
           if (!vid || !confirm('למחוק את השיר מהאחסון של השרת?')) return;
           try {{
-            const r = await fetch('/api/offline_delete?vid=' + encodeURIComponent(vid), {{ cache: 'no-store' }});
+            const r = await fetch(apiUrl('/api/offline_delete?vid=' + encodeURIComponent(vid)), {{ cache: 'no-store' }});
             const j = await r.json().catch(() => ({{}}));
             if (!r.ok || j.error) throw new Error(j.error || r.status);
             setStatus('נמחק מהשמורים');
@@ -5704,7 +5724,7 @@ def build_html():
 
     (function pwaInit() {{
       if ('serviceWorker' in navigator) {{
-        navigator.serviceWorker.register('/unblocked-sw.js', {{ scope: '/' }}).catch(function () {{}});
+        navigator.serviceWorker.register('unblocked-sw.js', {{ scope: './' }}).catch(function () {{}});
       }}
       var PWA_DISMISS = 'pwaInstallModalDismissed';
       var installPromptEvent = null;
@@ -6451,7 +6471,7 @@ def main():
     print(
         "לא להריץ 'python -m http.server' על אותו פורט כאן — זה נגן קבצים סטטי, לא השרת הזה."
     )
-    print("נגן הרכב הישן (ירוק) נמצא בקובץ: car-player-standalone.html (פתיחה ידנית בדפדפן).")
+    print("ייצוא סטטי ל-GitHub Pages: car-player-standalone.html (מסונכן מ־build_html; לניגון מלא להריץ את השרת).")
     if _auto_reload_from_env_enabled():
         print("ריסטארט אוטומטי: UNBLOCKED_AUTO_RELOAD=1 — כל שמירה ל־unblocked_player.py תאתחל את השרת.")
     print("Press Ctrl+C to stop")

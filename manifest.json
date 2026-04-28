@@ -1,13 +1,14 @@
 {
-  "name": "נגן מוזיקה לרכב",
-  "short_name": "נגן לרכב",
-  "description": "נגן מוזיקה נוח לשימוש ברכב עם פלייליסטים מותאמים",
+  "name": "מוזיקה Unblocked",
+  "short_name": "מוזיקה",
+  "description": "נגן YouTube — ספרייה, אהובים, פלייליסטים (ממשק v5)",
   "start_url": "car-player-standalone.html",
   "scope": "./",
+  "id": "unblocked-player-car",
   "display": "standalone",
   "display_override": ["standalone", "fullscreen", "minimal-ui"],
-  "background_color": "#203a43",
-  "theme_color": "#1db954",
+  "background_color": "#121212",
+  "theme_color": "#5edfff",
   "categories": ["music", "entertainment"],
   "icons": [
     {
