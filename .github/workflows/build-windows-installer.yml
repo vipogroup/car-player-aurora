@@ -19,6 +19,15 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup -y
 
+      # Inno [Files] Excludes still packs some paths; hide heavy optional trees for a small .exe.
+      - name: Exclude heavy optional paths from installer payload
+        shell: pwsh
+        run: |
+          if (Test-Path "offline_library") { Rename-Item -LiteralPath "offline_library" -NewName "_ci_exclude_offline_library" }
+          foreach ($f in @("car-music-player.zip", "local-server-unblocked.zip")) {
+            if (Test-Path $f) { Rename-Item -LiteralPath $f -NewName ("_ci_exclude_" + $f) }
+          }
+
       - name: Compile .iss
         shell: pwsh
         run: |
@@ -26,6 +35,16 @@ jobs:
           if (-not (Test-Path $iscc)) { throw "ISCC not found: $iscc" }
           & $iscc "installer\CarPlayerAurora.iss"
           Get-Item "installer\Output\CarPlayerAurora-Setup.exe" | Format-List *
+
+      - name: Restore excluded paths
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path "_ci_exclude_offline_library") { Rename-Item -LiteralPath "_ci_exclude_offline_library" -NewName "offline_library" }
+          foreach ($f in @("car-music-player.zip", "local-server-unblocked.zip")) {
+            $hid = "_ci_exclude_" + $f
+            if (Test-Path $hid) { Rename-Item -LiteralPath $hid -NewName $f }
+          }
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4

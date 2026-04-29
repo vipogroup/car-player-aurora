@@ -28,12 +28,12 @@ SetupLogging=yes
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "desktopserver"; Description: "Desktop shortcut: start server"; GroupDescription: "Shortcuts:"; Flags: checked
-Name: "desktopbrowser"; Description: "Desktop shortcut: open Aurora"; GroupDescription: "Shortcuts:"; Flags: checked
+Name: "desktopserver"; Description: "Desktop shortcut: start server"; GroupDescription: "Shortcuts:"
+Name: "desktopbrowser"; Description: "Desktop shortcut: open Aurora"; GroupDescription: "Shortcuts:"
 
 [Files]
 Source: "{#RepoRoot}\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion createallsubdirs; \
-  Excludes: ".git\*;.github\*;offline_library\*;*.pyc;__pycache__\*;.cursor\*;terminals\*;mcps\*;installer\Output\*"
+  Excludes: ".git\*;.github\*;offline_library\*;*.mp4;*.pyc;__pycache__\*;.cursor\*;.claude\*;terminals\*;mcps\*;installer\Output\*;car-music-player.zip;local-server-unblocked.zip"
 
 [Icons]
 Name: "{group}\Start Car Player server"; Filename: "{app}\start-server-lan.bat"; WorkingDir: "{app}"
