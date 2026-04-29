@@ -64,6 +64,64 @@ SERVER_LOADED_MTIME = int(os.path.getmtime(SCRIPT_FILE))
 OFFLINE_DIR = os.path.join(SCRIPT_DIR, "offline_library")
 _offline_lock = threading.Lock()
 
+# Aurora — חבילת UI חדשה (ראי aurora/index.html, aurora/styles.css, aurora/app.js)
+AURORA_DIR = os.path.join(SCRIPT_DIR, "aurora")
+AURORA_MIME = {
+    ".html": "text/html; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".js": "application/javascript; charset=utf-8",
+    ".mjs": "application/javascript; charset=utf-8",
+    ".json": "application/json; charset=utf-8",
+    ".svg": "image/svg+xml",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".woff2": "font/woff2",
+}
+
+
+def aurora_template_path() -> str:
+    return os.path.join(AURORA_DIR, "index.html")
+
+
+def aurora_template_available() -> bool:
+    return os.path.isfile(aurora_template_path())
+
+
+def build_html_aurora() -> str:
+    """Render the Aurora shell. Substitutes only data placeholders; the heavy
+    HTML/CSS/JS lives on disk in the aurora/ folder so it can be edited freely."""
+    with open(aurora_template_path(), "r", encoding="utf-8") as f:
+        tpl = f.read()
+    lan_url = ""
+    if HOST == "0.0.0.0":
+        lan = _guess_lan_ipv4()
+        if lan:
+            lan_url = f"http://{lan}:{PORT}/"
+    return (
+        tpl
+        .replace("{{PLAYLIST_JSON}}", json.dumps(PLAYLIST, ensure_ascii=False))
+        .replace("{{LAN_URL_JSON}}", json.dumps(lan_url))
+        .replace("{{BUILD}}", str(SERVER_LOADED_MTIME))
+        .replace("{{VERSION}}", UNBLOCKED_LOCAL_SERVER_VERSION)
+    )
+
+
+def _safe_aurora_path(rel: str) -> Optional[str]:
+    """Resolve a /aurora/<rel> request safely — must stay inside AURORA_DIR."""
+    rel = rel.lstrip("/").replace("\\", "/")
+    if not rel:
+        return None
+    if ".." in rel.split("/"):
+        return None
+    target = os.path.normpath(os.path.join(AURORA_DIR, rel))
+    if not target.startswith(os.path.normpath(AURORA_DIR)):
+        return None
+    if not os.path.isfile(target):
+        return None
+    return target
+
 # Service Worker (PWA — "התקנה" למסך הבית). עדכן מספר אם משנים לוגיקת מטמון.
 UNBLOCKED_PWA_VERSION = 4
 UNBLOCKED_SW_SOURCE = """
@@ -6118,7 +6176,16 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
         if parsed.path == "/":
-            body = build_html().encode("utf-8")
+            qs = urllib.parse.parse_qs(parsed.query)
+            ui = (qs.get("ui", [""])[0] or "").strip().lower()
+            use_aurora = aurora_template_available() and ui != "legacy"
+            try:
+                body = (build_html_aurora() if use_aurora else build_html()).encode("utf-8")
+                ui_label = "aurora" if use_aurora else "legacy"
+            except Exception as exc:
+                # Fallback to legacy if aurora template fails for any reason.
+                body = build_html().encode("utf-8")
+                ui_label = f"legacy(aurora-error:{exc})"
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
@@ -6128,8 +6195,34 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Expires", "0")
             self.send_header("X-Unblocked-Player", "1")
             self.send_header("X-Unblocked-Build", str(SERVER_LOADED_MTIME))
+            self.send_header("X-Unblocked-UI", ui_label)
             self.end_headers()
             self.wfile.write(body)
+            return
+
+        if parsed.path.startswith("/aurora/"):
+            rel = parsed.path[len("/aurora/"):]
+            path = _safe_aurora_path(rel)
+            if not path:
+                self.send_response(404)
+                self.end_headers()
+                return
+            ext = os.path.splitext(path)[1].lower()
+            mime = AURORA_MIME.get(ext, "application/octet-stream")
+            try:
+                with open(path, "rb") as fh:
+                    data = fh.read()
+            except OSError:
+                self.send_response(500)
+                self.end_headers()
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", mime)
+            self.send_header("Content-Length", str(len(data)))
+            # During development force-fresh; in prod we'd cache by mtime.
+            self.send_header("Cache-Control", "no-cache")
+            self.end_headers()
+            self.wfile.write(data)
             return
 
         if parsed.path == "/__player_check":

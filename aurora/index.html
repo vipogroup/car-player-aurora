@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta name="theme-color" content="#0a0d14" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="מוזיקה" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="aurora-build" content="{{BUILD}}" />
+  <title>Aurora · נגן מוזיקה</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" href="car-music-icon.png" />
+  <link rel="apple-touch-icon" href="car-music-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="aurora/styles.css" />
+</head>
+<body class="ar-app">
+
+  <div class="ar-bg" aria-hidden="true">
+    <div class="ar-bg-mesh"></div>
+    <div class="ar-bg-noise"></div>
+  </div>
+
+  <header class="ar-topbar" id="topbar">
+    <button class="ar-iconbtn ar-menu-btn" data-action="toggle-nav" aria-label="תפריט">
+      <svg class="ic"><use href="#i-list"/></svg>
+    </button>
+    <div class="ar-brand">
+      <div class="ar-brand-logo">
+        <svg viewBox="0 0 32 32" width="28" height="28">
+          <defs>
+            <linearGradient id="brandGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="var(--accent)"/>
+              <stop offset="100%" stop-color="var(--theme-secondary)"/>
+            </linearGradient>
+          </defs>
+          <circle cx="16" cy="16" r="14" fill="url(#brandGrad)" opacity="0.18"/>
+          <path d="M11 21V11l10-2v10" fill="none" stroke="url(#brandGrad)" stroke-width="2.2" stroke-linejoin="round"/>
+          <circle cx="11" cy="21" r="2.6" fill="url(#brandGrad)"/>
+          <circle cx="21" cy="19" r="2.6" fill="url(#brandGrad)"/>
+        </svg>
+      </div>
+      <div class="ar-brand-text">
+        <div class="ar-brand-name">Aurora</div>
+        <div class="ar-brand-sub">Music Player</div>
+      </div>
+    </div>
+
+    <button class="ar-search-trigger" data-action="open-palette" aria-label="חיפוש מהיר">
+      <svg class="ic"><use href="#i-search"/></svg>
+      <span class="ar-search-trigger-text">חפש שיר, אמן, פלייליסט…</span>
+      <span class="ar-kbd">⌘K</span>
+    </button>
+
+    <div class="ar-topbar-actions">
+      <button class="ar-iconbtn ar-iconbtn-ghost" data-action="drive-mode" aria-label="מצב רכב" title="מצב רכב">
+        <svg class="ic"><use href="#i-car"/></svg>
+      </button>
+      <button class="ar-iconbtn ar-iconbtn-ghost" data-action="qr-mobile" aria-label="QR למובייל" title="QR למובייל">
+        <svg class="ic"><use href="#i-qr"/></svg>
+      </button>
+      <button class="ar-iconbtn ar-iconbtn-ghost" data-action="open-tailscale" aria-label="גישה מרחוק" title="גישה מרחוק (Tailscale)">
+        <svg class="ic"><use href="#i-globe"/></svg>
+      </button>
+      <button class="ar-iconbtn ar-iconbtn-ghost" data-action="open-eq" aria-label="EQ" title="EQ">
+        <svg class="ic"><use href="#i-waves"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <aside class="ar-sidenav" id="sidenav" aria-label="ניווט ראשי">
+    <nav class="ar-nav">
+      <button class="ar-nav-item is-active" data-view="home"><svg class="ic"><use href="#i-home"/></svg><span>בית</span></button>
+      <button class="ar-nav-item" data-view="search"><svg class="ic"><use href="#i-search"/></svg><span>חיפוש</span></button>
+      <button class="ar-nav-item" data-view="library"><svg class="ic"><use href="#i-library"/></svg><span>הספרייה</span></button>
+      <button class="ar-nav-item" data-view="favorites"><svg class="ic"><use href="#i-heart"/></svg><span>אהובים</span></button>
+      <button class="ar-nav-item" data-view="playlists"><svg class="ic"><use href="#i-music"/></svg><span>פלייליסטים</span></button>
+      <button class="ar-nav-item" data-view="offline"><svg class="ic"><use href="#i-cloud"/></svg><span>אופליין</span></button>
+    </nav>
+    <div class="ar-nav-footer">
+      <div class="ar-nav-status">
+        <span class="ar-status-dot"></span>
+        <span id="serverStatus">שרת מקומי פעיל</span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="ar-main" id="mainPane">
+    <!-- Home view -->
+    <section class="ar-view ar-view-home is-active" data-view="home">
+      <div class="ar-hero">
+        <div class="ar-hero-greet">
+          <div class="ar-hero-time" id="heroGreeting">ברוכים הבאים</div>
+          <h1 class="ar-hero-title">מה נשמע היום?</h1>
+        </div>
+        <div class="ar-hero-quick" id="heroQuick"></div>
+      </div>
+
+      <section class="ar-section">
+        <header class="ar-section-head">
+          <h2 class="ar-section-title">המשך להאזין</h2>
+          <button class="ar-link-btn" data-action="show-recents">הכול</button>
+        </header>
+        <div class="ar-recents-row" id="recentsRow"></div>
+      </section>
+
+      <section class="ar-section">
+        <header class="ar-section-head">
+          <h2 class="ar-section-title">בנטו · עיקרי</h2>
+        </header>
+        <div class="ar-bento" id="bentoGrid">
+          <div class="ar-bento-tile ar-bento-hero" data-bento="now-playing">
+            <div class="ar-bento-bg" id="bentoNowBg"></div>
+            <div class="ar-bento-fg">
+              <div class="ar-bento-eyebrow">מתנגן עכשיו</div>
+              <div class="ar-bento-title" id="bentoNowTitle">לא נבחר שיר</div>
+              <div class="ar-bento-sub" id="bentoNowSub">בחרי שיר כדי להתחיל</div>
+              <button class="ar-bento-cta" data-action="open-player"><svg class="ic"><use href="#i-disc"/></svg>פתח נגן</button>
+            </div>
+          </div>
+          <div class="ar-bento-tile" data-bento="favorites" data-view="favorites">
+            <div class="ar-bento-fg">
+              <svg class="ic ar-bento-ic"><use href="#i-heart"/></svg>
+              <div class="ar-bento-title">אהובים</div>
+              <div class="ar-bento-sub" id="bentoFavCount">0 שירים</div>
+            </div>
+          </div>
+          <div class="ar-bento-tile" data-bento="library" data-view="library">
+            <div class="ar-bento-fg">
+              <svg class="ic ar-bento-ic"><use href="#i-library"/></svg>
+              <div class="ar-bento-title">כל הספרייה</div>
+              <div class="ar-bento-sub" id="bentoLibCount">0 שירים</div>
+            </div>
+          </div>
+          <div class="ar-bento-tile" data-bento="offline" data-view="offline">
+            <div class="ar-bento-fg">
+              <svg class="ic ar-bento-ic"><use href="#i-cloud"/></svg>
+              <div class="ar-bento-title">אופליין</div>
+              <div class="ar-bento-sub" id="bentoOfflineCount">0 שירים</div>
+            </div>
+          </div>
+          <div class="ar-bento-tile ar-bento-wide" data-bento="drive" data-action="drive-mode">
+            <div class="ar-bento-fg">
+              <svg class="ic ar-bento-ic"><use href="#i-car"/></svg>
+              <div class="ar-bento-title">מצב רכב</div>
+              <div class="ar-bento-sub">כפתורי ענק · נגישות מלאה תוך כדי נסיעה</div>
+              <span class="ar-bento-badge">חדש</span>
+            </div>
+          </div>
+          <div class="ar-bento-tile" data-bento="palette" data-action="open-palette">
+            <div class="ar-bento-fg">
+              <svg class="ic ar-bento-ic"><use href="#i-command"/></svg>
+              <div class="ar-bento-title">קומנד פאלט</div>
+              <div class="ar-bento-sub">⌘K · חיפוש כל-יכול</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="ar-section">
+        <header class="ar-section-head">
+          <h2 class="ar-section-title">הפלייליסטים שלי</h2>
+          <button class="ar-link-btn" data-action="new-playlist"><svg class="ic"><use href="#i-plus"/></svg>חדש</button>
+        </header>
+        <div class="ar-playlists-grid" id="playlistsGrid"></div>
+      </section>
+    </section>
+
+    <!-- Search view -->
+    <section class="ar-view" data-view="search">
+      <div class="ar-search-wrap">
+        <div class="ar-search-input">
+          <svg class="ic"><use href="#i-search"/></svg>
+          <input type="search" id="searchInput" placeholder="חפש ב-YouTube ובספרייה…" autocomplete="off" />
+          <button class="ar-iconbtn-mini" id="searchClear" aria-label="נקה"><svg class="ic"><use href="#i-close"/></svg></button>
+        </div>
+      </div>
+      <div class="ar-search-meta" id="searchMeta">התחילי להקליד כדי לחפש</div>
+      <div class="ar-results-grid" id="searchResults"></div>
+    </section>
+
+    <!-- Library view -->
+    <section class="ar-view" data-view="library">
+      <header class="ar-view-head">
+        <h2 class="ar-view-title">הספרייה</h2>
+        <div class="ar-view-actions">
+          <button class="ar-chip is-active" data-filter="all">הכל</button>
+          <button class="ar-chip" data-filter="favorites">אהובים</button>
+          <button class="ar-chip" data-filter="recent">לאחרונה</button>
+        </div>
+      </header>
+      <div class="ar-track-list" id="libraryList"></div>
+    </section>
+
+    <section class="ar-view" data-view="favorites">
+      <header class="ar-view-head">
+        <h2 class="ar-view-title">אהובים</h2>
+      </header>
+      <div class="ar-track-list" id="favoritesList"></div>
+    </section>
+
+    <section class="ar-view" data-view="playlists">
+      <header class="ar-view-head">
+        <h2 class="ar-view-title">פלייליסטים</h2>
+        <button class="ar-btn ar-btn-primary" data-action="new-playlist"><svg class="ic"><use href="#i-plus"/></svg>פלייליסט חדש</button>
+      </header>
+      <div class="ar-playlists-grid ar-playlists-grid-large" id="allPlaylistsGrid"></div>
+    </section>
+
+    <section class="ar-view" data-view="offline">
+      <header class="ar-view-head">
+        <h2 class="ar-view-title">ספרייה אופליין</h2>
+        <button class="ar-btn" data-action="save-current-offline"><svg class="ic"><use href="#i-download"/></svg>שמור את המתנגן עכשיו</button>
+      </header>
+      <div class="ar-track-list" id="offlineList"></div>
+    </section>
+
+    <section class="ar-view" data-view="playlist-detail">
+      <header class="ar-view-head">
+        <button class="ar-iconbtn-mini" data-action="back-playlists"><svg class="ic"><use href="#i-chevronRight"/></svg></button>
+        <h2 class="ar-view-title" id="playlistDetailTitle">פלייליסט</h2>
+        <div class="ar-view-actions">
+          <button class="ar-btn ar-btn-primary" data-action="play-playlist"><svg class="ic"><use href="#i-play"/></svg>נגן</button>
+          <button class="ar-iconbtn-mini" data-action="rename-playlist" title="שנה שם"><svg class="ic"><use href="#i-settings"/></svg></button>
+          <button class="ar-iconbtn-mini" data-action="delete-playlist" title="מחק"><svg class="ic"><use href="#i-trash"/></svg></button>
+        </div>
+      </header>
+      <div class="ar-track-list" id="playlistTracks"></div>
+    </section>
+
+  </main>
+
+  <!-- Now Playing dock (mini player + queue toggle) -->
+  <footer class="ar-dock" id="dock">
+    <button class="ar-dock-art" data-action="open-player">
+      <img id="dockArt" alt="" />
+      <div class="ar-dock-art-fallback"><svg class="ic"><use href="#i-music"/></svg></div>
+    </button>
+    <div class="ar-dock-info" data-action="open-player">
+      <div class="ar-dock-title" id="dockTitle">בחרי שיר</div>
+      <div class="ar-dock-sub" id="dockSub">—</div>
+    </div>
+    <div class="ar-dock-progress" id="dockProgress"><span></span></div>
+    <div class="ar-dock-controls">
+      <button class="ar-iconbtn-mini" data-action="like-current" id="dockLike" aria-label="אהוב"><svg class="ic"><use href="#i-heart"/></svg></button>
+      <button class="ar-iconbtn-mini" data-action="prev" aria-label="הקודם"><svg class="ic"><use href="#i-prev"/></svg></button>
+      <button class="ar-playbtn" data-action="toggle-play" id="dockPlay" aria-label="נגן/השהה"><svg class="ic" id="dockPlayIcon"><use href="#i-play"/></svg></button>
+      <button class="ar-iconbtn-mini" data-action="next" aria-label="הבא"><svg class="ic"><use href="#i-next"/></svg></button>
+      <button class="ar-iconbtn-mini" data-action="open-queue" aria-label="תור ניגון"><svg class="ic"><use href="#i-disc"/></svg></button>
+    </div>
+  </footer>
+
+  <!-- Hero player overlay -->
+  <section class="ar-player" id="playerOverlay" aria-hidden="true">
+    <button class="ar-player-close" data-action="close-player" aria-label="סגור">
+      <svg class="ic"><use href="#i-chevronDown"/></svg>
+    </button>
+
+    <div class="ar-player-stage">
+      <div class="ar-player-art-shell">
+        <canvas class="ar-viz" id="vizCanvas" aria-hidden="true"></canvas>
+        <div class="ar-player-art" id="playerArtWrap">
+          <img id="playerArt" alt="" />
+          <div class="ar-player-art-fallback"><svg class="ic"><use href="#i-disc"/></svg></div>
+        </div>
+      </div>
+
+      <div class="ar-player-meta">
+        <div class="ar-player-title" id="playerTitle">בחרי שיר</div>
+        <div class="ar-player-sub" id="playerSub">—</div>
+      </div>
+
+      <div class="ar-player-progress">
+        <div class="ar-progress" id="progressTrack">
+          <div class="ar-progress-fill" id="progressFill"></div>
+          <div class="ar-progress-thumb" id="progressThumb"></div>
+        </div>
+        <div class="ar-time-row">
+          <span id="timeCurrent">0:00</span>
+          <span id="timeTotal">0:00</span>
+        </div>
+      </div>
+
+      <div class="ar-player-controls">
+        <button class="ar-iconbtn-lg" data-action="shuffle" id="shuffleBtn" aria-label="ערבוב"><svg class="ic"><use href="#i-shuffle"/></svg></button>
+        <button class="ar-iconbtn-lg" data-action="prev" aria-label="הקודם"><svg class="ic"><use href="#i-prev"/></svg></button>
+        <button class="ar-playbtn-xl" data-action="toggle-play" id="playerPlay" aria-label="נגן/השהה"><svg class="ic" id="playerPlayIcon"><use href="#i-play"/></svg></button>
+        <button class="ar-iconbtn-lg" data-action="next" aria-label="הבא"><svg class="ic"><use href="#i-next"/></svg></button>
+        <button class="ar-iconbtn-lg" data-action="repeat" id="repeatBtn" aria-label="חזרה"><svg class="ic"><use href="#i-repeat"/></svg></button>
+      </div>
+
+      <div class="ar-player-extras">
+        <button class="ar-iconbtn-mini" data-action="like-current" id="playerLike" aria-label="אהוב"><svg class="ic"><use href="#i-heart"/></svg></button>
+        <button class="ar-iconbtn-mini" data-action="add-to-playlist" aria-label="לפלייליסט"><svg class="ic"><use href="#i-plus"/></svg></button>
+        <button class="ar-iconbtn-mini" data-action="save-current-offline" aria-label="שמור אופליין"><svg class="ic"><use href="#i-download"/></svg></button>
+        <button class="ar-iconbtn-mini" data-action="toggle-quality" id="qualityBtn" aria-label="איכות">HD</button>
+        <button class="ar-iconbtn-mini" data-action="open-eq" aria-label="EQ"><svg class="ic"><use href="#i-waves"/></svg></button>
+        <button class="ar-iconbtn-mini" data-action="open-queue" aria-label="תור ניגון"><svg class="ic"><use href="#i-disc"/></svg></button>
+      </div>
+
+      <div class="ar-volume-wrap">
+        <svg class="ic"><use href="#i-volume"/></svg>
+        <div class="ar-progress ar-progress-mini" id="volumeTrack">
+          <div class="ar-progress-fill" id="volumeFill"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Queue drawer -->
+  <aside class="ar-queue" id="queuePane" aria-hidden="true">
+    <header class="ar-queue-head">
+      <h3>תור הנגינה</h3>
+      <button class="ar-iconbtn-mini" data-action="close-queue" aria-label="סגור"><svg class="ic"><use href="#i-close"/></svg></button>
+    </header>
+    <div class="ar-queue-body" id="queueBody"></div>
+  </aside>
+
+  <!-- Command palette -->
+  <div class="ar-palette" id="palette" aria-hidden="true">
+    <div class="ar-palette-card">
+      <div class="ar-palette-input-wrap">
+        <svg class="ic"><use href="#i-search"/></svg>
+        <input type="search" id="paletteInput" placeholder="חפש או בחר פעולה…" autocomplete="off" />
+        <button class="ar-iconbtn-mini" data-action="close-palette" aria-label="סגור"><svg class="ic"><use href="#i-close"/></svg></button>
+      </div>
+      <div class="ar-palette-results" id="paletteResults"></div>
+      <div class="ar-palette-foot">
+        <span><kbd>↑</kbd><kbd>↓</kbd> נווט</span>
+        <span><kbd>↵</kbd> בחר</span>
+        <span><kbd>Esc</kbd> סגור</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- EQ drawer -->
+  <div class="ar-modal" id="eqModal" aria-hidden="true">
+    <div class="ar-modal-card ar-modal-eq">
+      <header class="ar-modal-head">
+        <h3>EQ · אקולייזר 10 פסים</h3>
+        <button class="ar-iconbtn-mini" data-action="close-eq" aria-label="סגור"><svg class="ic"><use href="#i-close"/></svg></button>
+      </header>
+      <div class="ar-eq-toolbar">
+        <button class="ar-chip is-active" data-eq-toggle="enable" id="eqEnableBtn">הפעל EQ</button>
+        <button class="ar-chip" data-eq-toggle="comp" id="eqCompBtn">קומפרסור</button>
+        <button class="ar-chip" data-eq-toggle="clip" id="eqClipBtn">הגנת קליפ</button>
+        <span class="ar-eq-spacer"></span>
+        <button class="ar-chip" data-eq-preset="flat">שטוח</button>
+        <button class="ar-chip" data-eq-preset="bass">בס</button>
+        <button class="ar-chip" data-eq-preset="vocal">קול</button>
+        <button class="ar-chip" data-eq-preset="car">רכב</button>
+      </div>
+      <div class="ar-eq-grid" id="eqGrid"></div>
+      <div class="ar-eq-foot">
+        <label>פריאמפ <input type="range" id="eqPreamp" min="-12" max="12" step="0.5" value="0"/></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR modal -->
+  <div class="ar-modal" id="qrModal" aria-hidden="true">
+    <div class="ar-modal-card">
+      <header class="ar-modal-head">
+        <h3>חיבור מובייל · QR</h3>
+        <button class="ar-iconbtn-mini" data-action="close-qr" aria-label="סגור"><svg class="ic"><use href="#i-close"/></svg></button>
+      </header>
+      <div class="ar-qr-body">
+        <div class="ar-qr-code" id="qrCode"></div>
+        <div class="ar-qr-text">
+          <div>סרקי את הקוד מהטלפון (אותה Wi‑Fi)</div>
+          <div class="ar-qr-url" id="qrUrl">—</div>
+          <button class="ar-btn ar-btn-primary" data-action="copy-lan">העתק כתובת</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tailscale modal -->
+  <div class="ar-modal" id="tsModal" aria-hidden="true">
+    <div class="ar-modal-card">
+      <header class="ar-modal-head">
+        <h3>גישה מרחוק · Tailscale</h3>
+        <button class="ar-iconbtn-mini" data-action="close-ts" aria-label="סגור"><svg class="ic"><use href="#i-close"/></svg></button>
+      </header>
+      <div class="ar-ts-body">
+        <p>מאפשר לטלפון להתחבר לשרת המקומי שלך מכל מקום בעולם, מוצפן.</p>
+        <ol>
+          <li>התקיני <a href="https://tailscale.com/download/windows" target="_blank" rel="noopener">Tailscale ל-Windows</a> והתחברי.</li>
+          <li>במובייל: <a href="https://play.google.com/store/apps/details?id=com.tailscale.ipn" target="_blank" rel="noopener">Android</a> · <a href="https://apps.apple.com/app/tailscale/id1470499037" target="_blank" rel="noopener">iPhone</a> — אותו חשבון.</li>
+          <li>פתחי בדפדפן הטלפון: <code id="tsExample">http://&lt;Tailscale-IP&gt;:5600</code></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- Drive Mode -->
+  <div class="ar-drive" id="driveMode" aria-hidden="true">
+    <button class="ar-drive-exit" data-action="exit-drive" aria-label="צא ממצב רכב">
+      <svg class="ic"><use href="#i-shrink"/></svg>
+    </button>
+    <div class="ar-drive-now">
+      <div class="ar-drive-art" id="driveArt"></div>
+      <div class="ar-drive-meta">
+        <div class="ar-drive-title" id="driveTitle">—</div>
+        <div class="ar-drive-sub" id="driveSub">—</div>
+      </div>
+    </div>
+    <div class="ar-drive-controls">
+      <button class="ar-drive-btn" data-action="prev"><svg class="ic"><use href="#i-prev"/></svg></button>
+      <button class="ar-drive-btn ar-drive-play" data-action="toggle-play"><svg class="ic" id="driveIcon"><use href="#i-play"/></svg></button>
+      <button class="ar-drive-btn" data-action="next"><svg class="ic"><use href="#i-next"/></svg></button>
+    </div>
+    <div class="ar-drive-extras">
+      <button class="ar-drive-mini" data-action="like-current"><svg class="ic"><use href="#i-heart"/></svg><span>אהוב</span></button>
+      <button class="ar-drive-mini" data-action="shuffle"><svg class="ic"><use href="#i-shuffle"/></svg><span>ערבוב</span></button>
+      <button class="ar-drive-mini" data-action="open-palette"><svg class="ic"><use href="#i-search"/></svg><span>חפש</span></button>
+    </div>
+  </div>
+
+  <!-- Toasts -->
+  <div class="ar-toasts" id="toasts" aria-live="polite"></div>
+
+  <!-- Hidden video element -->
+  <!-- בלי crossorigin: סטרימים מ-googlevideo לרוב חסומים ב-CORS עם anonymous ומונעים play() -->
+  <video id="audio" preload="auto" playsinline webkit-playsinline style="display:none"></video>
+
+  <script>
+    window.__AURORA__ = {
+      playlist: {{PLAYLIST_JSON}},
+      lanUrl: {{LAN_URL_JSON}},
+      build: "{{BUILD}}",
+      version: "{{VERSION}}"
+    };
+  </script>
+  <script type="module" src="aurora/app.js"></script>
+
+</body>
+</html>
