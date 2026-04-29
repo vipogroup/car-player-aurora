@@ -1568,7 +1568,7 @@ function setupInstallPrompt() {
 }
 
 const AUTO_INSTALL_SCRIPT_RAW =
-  'https://raw.githubusercontent.com/vipogroup/car-/main/scripts/install-and-run.ps1';
+  'https://raw.githubusercontent.com/vipogroup/car-player-aurora/main/scripts/install-and-run.ps1';
 
 function copyAutoInstallCommand() {
   const cmd = `powershell -NoProfile -ExecutionPolicy Bypass -Command "irm '${AUTO_INSTALL_SCRIPT_RAW}' | iex"`;

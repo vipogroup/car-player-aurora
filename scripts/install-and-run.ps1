@@ -1,5 +1,5 @@
 # Installs Car Player / Aurora from GitHub (main) and starts the full local server.
-# Run once: irm https://raw.githubusercontent.com/vipogroup/car-/main/scripts/install-and-run.ps1 | iex
+# Run once: irm https://raw.githubusercontent.com/vipogroup/car-player-aurora/main/scripts/install-and-run.ps1 | iex
 # Requires: Windows, Python 3.10+ on PATH (winget install Python.Python.3.13)
 
 param(
@@ -8,7 +8,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$RepoZipUrl = 'https://github.com/vipogroup/car-/archive/refs/heads/main.zip'
+$RepoZipUrl = 'https://github.com/vipogroup/car-player-aurora/archive/refs/heads/main.zip'
 
 if (-not $InstallPath) {
   $InstallPath = Join-Path $env:USERPROFILE 'CarPlayer-Aurora'

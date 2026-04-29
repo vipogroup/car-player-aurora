@@ -441,21 +441,21 @@
           <li>חיפוש → ניגון → <strong>אופליין</strong> → <strong>העתק למכשיר</strong>. אחר כך מצב <strong>רק במכשיר</strong> לניגון בלי השרת.</li>
         </ol>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 16px">
-          <a class="ar-btn ar-btn-primary" href="https://github.com/vipogroup/car-/releases/latest/download/CarPlayerAurora-Setup.exe">הורד CarPlayerAurora-Setup.exe</a>
-          <a class="ar-btn" href="https://github.com/vipogroup/car-/releases" target="_blank" rel="noopener">עמוד גרסאות</a>
+          <a class="ar-btn ar-btn-primary" href="https://github.com/vipogroup/car-player-aurora/releases/latest/download/CarPlayerAurora-Setup.exe">הורד CarPlayerAurora-Setup.exe</a>
+          <a class="ar-btn" href="https://github.com/vipogroup/car-player-aurora/releases" target="_blank" rel="noopener">עמוד גרסאות</a>
         </div>
-        <p style="color:var(--text-3);font-size:0.88rem">אם ההורדה מחזירה 404: בעל הריפו מריץ ב-GitHub פעם אחת <strong>Actions → Build Windows installer → Run workflow</strong> — בסוף הבנייה נוצר Release והקישור למעלה מתחיל לעבוד. עד אז: שלב ב׳.</p>
+        <p style="color:var(--text-3);font-size:0.88rem">אם ההורדה מחזירה 404: ב־<strong>car-player-aurora</strong> → <strong>Actions → Build Windows installer → Run workflow</strong> (פעם אחת). אחרי בנייה מוצלחת הקישור למעלה עובד. עד אז: שלב ב׳.</p>
         <p><strong>שלב ב׳ — PowerShell (אם אין .exe)</strong></p>
         <ol>
           <li>פתחי PowerShell, לחצי <strong>העתק פקודת התקנה אוטומטית</strong> והדביקי → Enter. (מוריד ל־<code dir="ltr">%USERPROFILE%\CarPlayer-Aurora</code>, מתקין חבילות, מפעיל שרת.)</li>
         </ol>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;margin-bottom:16px">
           <button type="button" class="ar-btn ar-btn-primary" data-action="copy-auto-install">העתק פקודת התקנה אוטומטית</button>
-          <a class="ar-btn" href="https://github.com/vipogroup/car-/blob/main/scripts/install-and-run.ps1" target="_blank" rel="noopener">צפי בסקריפט</a>
+          <a class="ar-btn" href="https://github.com/vipogroup/car-player-aurora/blob/main/scripts/install-and-run.ps1" target="_blank" rel="noopener">צפי בסקריפט</a>
         </div>
         <p><strong>שלב ג׳ — התקנה ידנית (ZIP)</strong></p>
         <ol>
-          <li><a href="https://github.com/vipogroup/car-/archive/refs/heads/main.zip" target="_blank" rel="noopener">Download ZIP</a> → חילוץ לתיקייה.</li>
+          <li><a href="https://github.com/vipogroup/car-player-aurora/archive/refs/heads/main.zip" target="_blank" rel="noopener">Download ZIP</a> → חילוץ לתיקייה.</li>
           <li>פעם ראשונה בתיקייה: <code dir="ltr">pip install -r requirements.txt</code></li>
           <li>כל הפעלה: לחיצה כפולה על <code dir="ltr">start-server-lan.bat</code> (לא <code dir="ltr">http.server</code>).</li>
           <li>מחשב: <code dir="ltr">http://127.0.0.1:5600/aurora/index.html</code> · מובייל באותה רשת: <code dir="ltr">http://&lt;IP&gt;:5600/aurora/index.html</code></li>
