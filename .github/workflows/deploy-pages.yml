@@ -1,4 +1,4 @@
-# מפרסם את car-player-standalone.html כדף הבית ב-GitHub Pages
+# מפרסם את Aurora כדף הבית ב-GitHub Pages
 # אחרי הדחיפה: הגדרות הרפו → Pages → Build: GitHub Actions
 # כתובת צפויה: https://vipogroup.github.io/car-player-aurora/
 name: Deploy GitHub Pages
@@ -33,7 +33,21 @@ jobs:
       - name: Build static site
         run: |
           mkdir -p _site
-          cp car-player-standalone.html _site/index.html
+          mkdir -p _site/aurora
+          cp -r aurora/* _site/aurora/
+          cp manifest.json _site/manifest.json
+          python - <<'PY'
+          from pathlib import Path
+
+          html = Path("aurora/index.html").read_text(encoding="utf-8")
+          html = (
+              html.replace("{{PLAYLIST_JSON}}", "[]")
+                  .replace("{{LAN_URL_JSON}}", '""')
+                  .replace("{{BUILD}}", "pages")
+                  .replace("{{VERSION}}", "pages")
+          )
+          Path("_site/index.html").write_text(html, encoding="utf-8")
+          PY
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
