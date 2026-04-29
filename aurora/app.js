@@ -298,6 +298,7 @@ function setView(view) {
   if (view === 'favorites') renderFavorites();
   if (view === 'playlists') renderAllPlaylists();
   if (view === 'offline') refreshOffline();
+  if (view === 'home') renderLanWifiPanel();
   document.body.classList.remove('is-nav-open');
   state.navOpen = false;
   $('.ar-app').classList.remove('is-nav-open');
@@ -356,6 +357,7 @@ function renderHome() {
   }
 
   renderPlaylistsGrid($('#playlistsGrid'));
+  renderLanWifiPanel();
 }
 
 function greetByTime() {
@@ -805,6 +807,7 @@ function refreshPalette(query) {
     { kind: 'action', icon: 'repeat', title: 'מצב חזרה', sub: '', run: cycleRepeat },
     { kind: 'action', icon: 'car', title: 'הפעל מצב רכב', sub: '', run: enterDrive },
     { kind: 'action', icon: 'qr', title: 'הצג QR למובייל', sub: '', run: openQR },
+    { kind: 'action', icon: 'link', title: 'קישור HTTPS כמו אתר (מנהרה)', sub: 'Cloudflare', run: () => openModal('publicLinkModal') },
     { kind: 'action', icon: 'globe', title: 'מדריך Tailscale (גישה מרחוק)', sub: '', run: () => openModal('tsModal') },
     { kind: 'action', icon: 'waves', title: 'פתח EQ', sub: '', run: () => openModal('eqModal') },
     { kind: 'action', icon: 'plus', title: 'פלייליסט חדש', sub: '', run: createPlaylist },
@@ -991,10 +994,43 @@ function refreshEqToolbar() {
 }
 
 // ============================================================
+// מובייל באותה רשת Wi‑Fi (אפשרות 2 — ללא גישה מרחוק)
+// ============================================================
+/** כתובת לפתיחה בטלפון: מהשרת (LAN) או כתובת הדף אם כבר נכנסת מרשת מקומית */
+function sameWifiShareUrl() {
+  const fromServer = (APP.lanUrl || '').trim();
+  if (fromServer) return fromServer;
+  try {
+    const { protocol, hostname, port } = window.location;
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      const p = port ? `:${port}` : '';
+      return `${protocol}//${hostname}${p}/`;
+    }
+  } catch (_) {}
+  return '';
+}
+
+function renderLanWifiPanel() {
+  const urlEl = $('#lanWifiUrlDisplay');
+  const hintEl = $('#lanWifiHint');
+  if (!urlEl || !hintEl) return;
+  const u = sameWifiShareUrl();
+  if (u) {
+    urlEl.textContent = u;
+    hintEl.textContent =
+      'פתחי את הכתובת בדפדפן הטלפון (Chrome או Edge). אם הדף לא נטען — הריצי פעם אחת כמנהל את add-firewall-unblocked.ps1 (אישור פורט 5600 בחומת האש של Windows).';
+  } else {
+    urlEl.textContent = '—';
+    hintEl.innerHTML =
+      'השרת לא דיווח כתובת LAN. הריצי <strong>start-server-lan.bat</strong> (אזינה על כל הממשקים). בטלפון הזיני את כתובת ה־IP של המחשב ברשת (למשל 192.168.x.x) ולא 127.0.0.1.';
+  }
+}
+
+// ============================================================
 // QR
 // ============================================================
 function openQR() {
-  const url = APP.lanUrl || `${window.location.protocol}//${window.location.host}/`;
+  const url = sameWifiShareUrl() || `${window.location.protocol}//${window.location.host}/`;
   $('#qrUrl').textContent = url;
   drawQR($('#qrCode'), url);
   openModal('qrModal');
@@ -1166,6 +1202,8 @@ function bindEvents() {
         case 'close-eq': closeModal('eqModal'); return;
         case 'qr-mobile': openQR(); return;
         case 'close-qr': closeModal('qrModal'); return;
+        case 'open-public-link': openModal('publicLinkModal'); return;
+        case 'close-public-link': closeModal('publicLinkModal'); return;
         case 'open-tailscale': openModal('tsModal'); return;
         case 'close-ts': closeModal('tsModal'); return;
         case 'drive-mode': enterDrive(); return;
@@ -1185,7 +1223,20 @@ function bindEvents() {
         case 'play-playlist': playPlaylist(state._currentPlaylistId); return;
         case 'rename-playlist': renamePlaylist(state._currentPlaylistId); return;
         case 'delete-playlist': deletePlaylist(state._currentPlaylistId); return;
-        case 'copy-lan': navigator.clipboard?.writeText(APP.lanUrl || window.location.href).then(() => toast('הועתק', 'success')); return;
+        case 'copy-lan': {
+          const cu = sameWifiShareUrl() || APP.lanUrl || window.location.href;
+          navigator.clipboard?.writeText(cu).then(() => toast('הועתק', 'success')).catch(() => toast('העתקה נכשלה', 'error'));
+          return;
+        }
+        case 'copy-lan-home': {
+          const u = sameWifiShareUrl();
+          if (!u) {
+            toast('אין כתובת LAN — הריצי start-server-lan והעתיקי את ה-IP מהטרמינל', 'error');
+            return;
+          }
+          navigator.clipboard?.writeText(u).then(() => toast('הועתק — פתחי בטלפון באותה Wi‑Fi', 'success')).catch(() => toast('העתקה נכשלה', 'error'));
+          return;
+        }
       }
     }
 
@@ -1220,7 +1271,7 @@ function bindEvents() {
     // Click outside palette closes it
     if (state.paletteOpen && !e.target.closest('.ar-palette-card')) closePalette();
     // Click outside modals closes them
-    ['eqModal', 'qrModal', 'tsModal'].forEach((id) => {
+    ['eqModal', 'qrModal', 'tsModal', 'publicLinkModal'].forEach((id) => {
       const m = $('#' + id);
       if (m.classList.contains('is-open') && e.target === m) m.classList.remove('is-open');
     });
@@ -1238,7 +1289,7 @@ function bindEvents() {
       else if (state.driveMode) exitDrive();
       else if (state.playerOpen) closePlayer();
       else if (state.queueOpen) closeQueue();
-      else ['eqModal', 'qrModal', 'tsModal'].forEach((id) => closeModal(id));
+      else ['eqModal', 'qrModal', 'tsModal', 'publicLinkModal'].forEach((id) => closeModal(id));
       return;
     }
     if (state.paletteOpen) {

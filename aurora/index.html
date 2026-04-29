@@ -65,6 +65,9 @@
       <button class="ar-iconbtn ar-iconbtn-ghost" data-action="qr-mobile" aria-label="QR למובייל" title="QR למובייל">
         <svg class="ic"><use href="#i-qr"/></svg>
       </button>
+      <button class="ar-iconbtn ar-iconbtn-ghost" data-action="open-public-link" aria-label="קישור HTTPS כמו אתר" title="קישור HTTPS כמו אתר (מנהרה)">
+        <svg class="ic"><use href="#i-link"/></svg>
+      </button>
       <button class="ar-iconbtn ar-iconbtn-ghost" data-action="open-tailscale" aria-label="גישה מרחוק" title="גישה מרחוק (Tailscale)">
         <svg class="ic"><use href="#i-globe"/></svg>
       </button>
@@ -100,6 +103,25 @@
           <h1 class="ar-hero-title">מה נשמע היום?</h1>
         </div>
         <div class="ar-hero-quick" id="heroQuick"></div>
+      </div>
+
+      <!-- טלפון באותה רשת Wi‑Fi בלבד (מחשב + מובייל על אותה רשת) -->
+      <div class="ar-lan-panel" id="lanWifiPanel" aria-labelledby="lanWifiTitle">
+        <div class="ar-lan-panel-main">
+          <div class="ar-lan-panel-text">
+            <div class="ar-lan-panel-eyebrow" id="lanWifiTitle">מובייל · אותה רשת Wi‑Fi</div>
+            <p class="ar-lan-panel-desc" id="lanWifiDesc">
+              הטלפון והמחשב חייבים להיות על <strong>אותה רשת אלחוטית</strong> (בית / נקודה חמה מהמחשב). לא יעבוד מסלולר בלבד כשהמחשב בבית והטלפון בנסיעה ללא VPN או מנהרה.
+            </p>
+          </div>
+          <div class="ar-lan-panel-actions">
+            <button type="button" class="ar-btn ar-btn-primary" data-action="qr-mobile">סריקת QR</button>
+            <button type="button" class="ar-btn" data-action="copy-lan-home">העתק כתובת</button>
+            <button type="button" class="ar-btn" data-action="open-public-link">קישור HTTPS כמו אתר</button>
+          </div>
+        </div>
+        <div class="ar-lan-panel-url" id="lanWifiUrlDisplay" dir="ltr" translate="no">—</div>
+        <p class="ar-lan-panel-hint" id="lanWifiHint"></p>
       </div>
 
       <section class="ar-section">
@@ -377,6 +399,31 @@
           <div class="ar-qr-url" id="qrUrl">—</div>
           <button class="ar-btn ar-btn-primary" data-action="copy-lan">העתק כתובת</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- קישור ציבורי HTTPS (Cloudflare Quick Tunnel) -->
+  <div class="ar-modal" id="publicLinkModal" aria-hidden="true">
+    <div class="ar-modal-card">
+      <header class="ar-modal-head">
+        <h3>קישור כמו אתר · HTTPS</h3>
+        <button class="ar-iconbtn-mini" data-action="close-public-link" aria-label="סגור"><svg class="ic"><use href="#i-close"/></svg></button>
+      </header>
+      <div class="ar-ts-body">
+        <p>כדי לקבל כתובת <strong>https://…</strong> שנפתחת בטלפון מכל מקום (כמו אתר), משתמשים ב־<strong>Cloudflare Quick Tunnel</strong> יחד עם השרת המקומי.</p>
+        <ol>
+          <li>התקיני פעם אחת את <strong>cloudflared</strong> (חינמי):
+            <br/>PowerShell <strong>כמנהל</strong>: <code dir="ltr">winget install Cloudflare.cloudflared</code>
+            <br/>או הורדה מ־<a href="https://github.com/cloudflare/cloudflared/releases" target="_blank" rel="noopener">GitHub — cloudflared</a>
+          </li>
+          <li>סגרי חלונות שרת ישנים, ואז לחצי כפול על הקובץ בתיקיית הפרויקט:
+            <br/><strong dir="ltr">start-public-https.bat</strong>
+          </li>
+          <li>ייפתחו <strong>שני חלונות</strong>: אחד לשרת, אחד למנהרה. בחלון המנהרה תופיע שורה עם כתובת שמתחילה ב־<code dir="ltr">https://</code> ונגמרת ב־<code dir="ltr">trycloudflare.com</code> — זה הקישור לשמירה או לשליחה לטלפון.</li>
+          <li>המחשב חייב להישאר <strong>דולק</strong> ומחובר לאינטרנט כל עוד רוצים שהקישור יעבוד.</li>
+        </ol>
+        <p style="font-size:0.88rem;color:var(--text-3)">הקישור משתנה בכל הרצה. אל תשתפי בפומבי — בזמן פעילות המנהרה כל מי שיש לו את הקישור יכול לגשת לנגן. מדריך טקסט: <strong dir="ltr">קישור-HTTPS-מהיר.txt</strong> בתיקייה.</p>
       </div>
     </div>
   </div>

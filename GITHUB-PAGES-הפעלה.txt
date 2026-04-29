@@ -1,0 +1,27 @@
+GitHub Pages — קישור HTML ציבורי לנגן
+======================================
+
+אחרי שדחפת את הקוד ל־GitHub (רפו car-player-aurora):
+
+1) פתחי את הרפו בדפדפן:
+   https://github.com/vipogroup/car-player-aurora
+
+2) Settings (הגדרות) → בתפריט השמאלי: Pages
+
+3) תחת "Build and deployment":
+   - Source: בחרי **GitHub Actions** (לא Branch)
+
+4) חזרי ללשונית Actions — אמורה לרוץ Workflow בשם "Deploy GitHub Pages".
+   אם היא ירוקה, האתר עלה.
+
+5) כתובת האתר (בדרך כלל):
+   https://vipogroup.github.io/car-player-aurora/
+
+   זה דף HTML מלא (גרסת standalone) — נפתח בטלפון כמו אתר.
+   לניגון מלא עם yt-dlp כמו בשרת המקומי, עדיין צריך את Python אצלך.
+
+הערה לרפו פרטי (Private):
+--------------------------
+בארגונים, Pages לרפו פרטי לפעמים דורש תוכנית בתשלום.
+אם ה-Pages לא נפתחים — נסי להפוך את הרפו ל־Public:
+Settings → General → Danger zone → Change visibility

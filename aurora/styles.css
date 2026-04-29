@@ -613,6 +613,76 @@ a:hover { color: var(--accent-glow); }
 }
 
 /* ============================================================
+   Same Wi‑Fi panel (מובייל באותה רשת בלבד)
+   ============================================================ */
+.ar-lan-panel {
+  margin-bottom: 36px;
+  padding: 20px 22px;
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(135deg, rgba(var(--accent-rgb), 0.12), var(--surface-1));
+  border: 1px solid var(--border-accent);
+  box-shadow: var(--shadow-sm), var(--inset-hi);
+}
+.ar-lan-panel-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.ar-lan-panel-text { flex: 1; min-width: 200px; max-width: 640px; }
+.ar-lan-panel-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.ar-lan-panel-desc {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-2);
+  font-weight: 500;
+}
+.ar-lan-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.ar-lan-panel-url {
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 12px 16px;
+  border-radius: var(--r-sm);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  word-break: break-all;
+  margin-bottom: 10px;
+}
+.ar-lan-panel-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-3);
+  font-weight: 500;
+}
+.ar-lan-panel-hint code {
+  font-family: var(--font-mono);
+  font-size: 0.78em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--border);
+}
+
+/* ============================================================
    Sections
    ============================================================ */
 .ar-section { margin-bottom: 44px; }
