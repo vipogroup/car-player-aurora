@@ -33,7 +33,7 @@ Name: "desktopbrowser"; Description: "Desktop shortcut: open Aurora"; GroupDescr
 
 [Files]
 Source: "{#RepoRoot}\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion createallsubdirs; \
-  Excludes: ".git\*;.github\*;offline_library\*;*.mp4;*.pyc;__pycache__\*;.cursor\*;.claude\*;terminals\*;mcps\*;installer\Output\*;car-music-player.zip;local-server-unblocked.zip"
+  Excludes: ".git\*;.github\*;offline_library\*;*.mp4;*.pyc;__pycache__\*;.cursor\*;.claude\*;terminals\*;mcps\*;installer\Output\;installer\Output\*;car-music-player.zip;local-server-unblocked.zip;CarPlayerAurora-Setup.exe"
 
 [Icons]
 Name: "{group}\Start Car Player server"; Filename: "{app}\start-server-lan.bat"; WorkingDir: "{app}"
@@ -58,14 +58,26 @@ end;
 
 function InitializeSetup: Boolean;
 begin
-  if not PythonOnPath then
+  { אל תעצור כאן — אחרת נראה כאילו "שום דבר לא נפתח" (הודעה קטנה מאחורי חלונות / SmartScreen). }
+  Result := true;
+end;
+
+function NextButtonClick(CurPageID: Integer): Boolean;
+begin
+  Result := true;
+  if CurPageID = wpReady then
   begin
-    MsgBox('Python 3.10+ is required on PATH.'#13#10 +
-           'Install: winget install Python.Python.3.13'#13#10 +
-           'Enable "Add python.exe to PATH", then run this installer again.',
-           mbError, MB_OK);
-    Result := false;
-  end
-  else
-    Result := true;
+    if not PythonOnPath then
+    begin
+      MsgBox('חסר Python ב-PATH (גרסה 3.10 ומעלה).'#13#10#13#10 +
+             'ב-PowerShell:'#13#10 +
+             '  winget install Python.Python.3.13'#13#10 +
+             'סמני "Add python.exe to PATH", סגרי את PowerShell, ואז הריצי שוב את המתקין.'#13#10#13#10 +
+             'אם לחיצה על הקובץ לא פותחת חלון:'#13#10 +
+             '  לחצי ימין → מאפיינים → אם יש "שחרור חסימה" — סמני ואשרי.'#13#10 +
+             '  אם מופיע SmartScreen — "מידע נוסף" → "הרץ בכל זאת".',
+             mbError, MB_OK);
+      Result := false;
+    end;
+  end;
 end;
