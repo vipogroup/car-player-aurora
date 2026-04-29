@@ -1,0 +1,5 @@
+{
+  "version": 2,
+  "updatedAt": "2026-04-29",
+  "note": "Bump \"version\" (integer) whenever you ship UI/JS changes so installed PWAs get the update prompt."
+}

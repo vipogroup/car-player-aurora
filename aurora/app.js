@@ -17,6 +17,7 @@ const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
 const APP = window.__AURORA__ || { playlist: [], lanUrl: '', build: '', version: '' };
 const INSTALL_DISMISSED_KEY = 'aurora.installPromptDismissed';
+const CLIENT_BUNDLE_VERSION_KEY = 'aurora.clientBundleVersion';
 const KEYS_RUN_MODE = 'aurora.runMode';
 let deferredInstallPrompt = null;
 
@@ -48,6 +49,7 @@ const state = {
   env: { hasBackend: false, checked: false },
   runMode: loadJSON(KEYS_RUN_MODE, 'auto'),
   effectiveRunMode: 'server',
+  pendingUpdateVersion: null,
 
   currentTrack: null,
   currentSource: 'library',
@@ -1304,7 +1306,118 @@ function setInstallPromptText() {
   host.innerHTML = '<p>ב־Android: פתחי תפריט דפדפן (⋮) ואז <strong>התקן אפליקציה</strong> / <strong>Add to Home screen</strong>.</p>';
 }
 
+function normalizeBundleVersion(v) {
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (typeof v === 'string' && /^\d+$/.test(v.trim())) return parseInt(v.trim(), 10);
+  return null;
+}
+
+async function fetchPublishedClientVersion() {
+  try {
+    const url = `${new URL('client-version.json', import.meta.url).href}?t=${Date.now()}`;
+    const r = await fetch(url, { cache: 'no-store' });
+    if (!r.ok) return null;
+    const j = await r.json();
+    return normalizeBundleVersion(j?.version);
+  } catch {
+    return null;
+  }
+}
+
+async function registerServiceWorkerForUpdates() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    const swUrl = new URL('../unblocked-sw.js', import.meta.url).href;
+    const reg = await navigator.serviceWorker.register(swUrl, { updateViaCache: 'none' });
+    if (!reg.__auroraUpdateListener) {
+      reg.__auroraUpdateListener = true;
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', () => {
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+            void runUpdateCheck();
+          }
+        });
+      });
+    }
+    await reg.update();
+  } catch {
+    // אין קובץ SW (חלק מהאירוחים הסטטיים) — עדיין עובד עם רענון ידני
+  }
+}
+
+async function runUpdateCheck() {
+  if ($('#updateModal')?.classList.contains('is-open')) return;
+  const remoteNum = await fetchPublishedClientVersion();
+  if (remoteNum == null) return;
+  const stored = localStorage.getItem(CLIENT_BUNDLE_VERSION_KEY);
+  if (stored == null || stored === '') {
+    localStorage.setItem(CLIENT_BUNDLE_VERSION_KEY, String(remoteNum));
+    return;
+  }
+  const localNum = normalizeBundleVersion(stored);
+  if (localNum == null) {
+    localStorage.setItem(CLIENT_BUNDLE_VERSION_KEY, String(remoteNum));
+    return;
+  }
+  if (remoteNum <= localNum) return;
+  const dismissed = sessionStorage.getItem('aurora.updateDismissedFor');
+  if (dismissed != null && normalizeBundleVersion(dismissed) === remoteNum) return;
+  state.pendingUpdateVersion = remoteNum;
+  const el = $('#updateRemoteVersion');
+  if (el) el.textContent = String(remoteNum);
+  openModal('updateModal');
+}
+
+let updateCheckInterval = null;
+let autoUpdateListenersBound = false;
+
+async function setupAutoUpdate() {
+  await registerServiceWorkerForUpdates();
+  await runUpdateCheck();
+  if (autoUpdateListenersBound) return;
+  autoUpdateListenersBound = true;
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') void runUpdateCheck();
+  });
+  if (updateCheckInterval) clearInterval(updateCheckInterval);
+  updateCheckInterval = setInterval(() => { void runUpdateCheck(); }, 20 * 60 * 1000);
+}
+
+function dismissAppUpdateModal() {
+  if (state.pendingUpdateVersion != null) {
+    sessionStorage.setItem('aurora.updateDismissedFor', String(state.pendingUpdateVersion));
+  }
+  state.pendingUpdateVersion = null;
+  closeModal('updateModal');
+}
+
+async function applyBundleUpdate() {
+  const v = state.pendingUpdateVersion;
+  if (v == null) return;
+  try {
+    localStorage.setItem(CLIENT_BUNDLE_VERSION_KEY, String(v));
+    sessionStorage.removeItem('aurora.updateDismissedFor');
+    closeModal('updateModal');
+    state.pendingUpdateVersion = null;
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((reg) => reg.unregister()));
+    }
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+  } catch (e) {
+    toast(String(e?.message || e), 'error');
+    return;
+  }
+  location.reload();
+}
+
 function maybeShowInstallModal() {
+  if ($('#updateModal')?.classList.contains('is-open')) return;
   if (!isMobileClient() || isStandaloneInstalled()) return;
   if (!isNewUserSession()) return;
   if (loadJSON(INSTALL_DISMISSED_KEY, false)) return;
@@ -1538,6 +1651,12 @@ function bindEvents() {
           saveJSON(INSTALL_DISMISSED_KEY, true);
           closeModal('installModal');
           return;
+        case 'apply-app-update':
+          void applyBundleUpdate();
+          return;
+        case 'dismiss-app-update':
+          dismissAppUpdateModal();
+          return;
         case 'open-public-link': openModal('publicLinkModal'); return;
         case 'close-public-link': closeModal('publicLinkModal'); return;
         case 'open-tailscale': openModal('tsModal'); return;
@@ -1617,6 +1736,10 @@ function bindEvents() {
       const m = $('#' + id);
       if (m.classList.contains('is-open') && e.target === m) m.classList.remove('is-open');
     });
+    {
+      const um = $('#updateModal');
+      if (um?.classList.contains('is-open') && e.target === um) dismissAppUpdateModal();
+    }
     if (state.queueOpen && !e.target.closest('.ar-queue')) {
       closeQueue();
     }
@@ -1631,6 +1754,7 @@ function bindEvents() {
       else if (state.driveMode) exitDrive();
       else if (state.playerOpen) closePlayer();
       else if (state.queueOpen) closeQueue();
+      else if ($('#updateModal')?.classList.contains('is-open')) dismissAppUpdateModal();
       else ['eqModal', 'qrModal', 'lanInfoModal', 'localSetupModal', 'installModal', 'tsModal', 'publicLinkModal'].forEach((id) => closeModal(id));
       return;
     }
@@ -1761,6 +1885,7 @@ async function init() {
   bindAudio();
   bindSeek();
   bindEvents();
+  await setupAutoUpdate();
   bindSearchView();
   buildEqUI();
   setupInstallPrompt();

@@ -1,4 +1,4 @@
-const UNBLOCKED_PWA_VERSION = 4;
+const UNBLOCKED_PWA_VERSION = 5;
 const CACHE = 'unblocked-pwa-v' + UNBLOCKED_PWA_VERSION;
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -43,6 +43,24 @@ self.addEventListener('fetch', (event) => {
   }
   if (u.pathname.includes('/api/')) {
     event.respondWith(fetch(event.request, { cache: 'no-store' }));
+    return;
+  }
+  if (u.pathname.includes('/aurora/')) {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' })
+        .then((res) => {
+          if (res && res.status === 200) {
+            const c = res.clone();
+            caches.open(CACHE).then((cache) => {
+              try {
+                cache.put(event.request, c);
+              } catch (e) {}
+            });
+          }
+          return res;
+        })
+        .catch(() => caches.match(event.request))
+    );
     return;
   }
   event.respondWith(

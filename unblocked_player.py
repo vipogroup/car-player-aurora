@@ -123,7 +123,7 @@ def _safe_aurora_path(rel: str) -> Optional[str]:
     return target
 
 # Service Worker (PWA — "התקנה" למסך הבית). עדכן מספר אם משנים לוגיקת מטמון.
-UNBLOCKED_PWA_VERSION = 4
+UNBLOCKED_PWA_VERSION = 5
 UNBLOCKED_SW_SOURCE = """
 const UNBLOCKED_PWA_VERSION = %d;
 const CACHE = 'unblocked-pwa-v' + UNBLOCKED_PWA_VERSION;
@@ -170,6 +170,24 @@ self.addEventListener('fetch', (event) => {
   }
   if (u.pathname.includes('/api/')) {
     event.respondWith(fetch(event.request, { cache: 'no-store' }));
+    return;
+  }
+  if (u.pathname.includes('/aurora/')) {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' })
+        .then((res) => {
+          if (res && res.status === 200) {
+            const c = res.clone();
+            caches.open(CACHE).then((cache) => {
+              try {
+                cache.put(event.request, c);
+              } catch (e) {}
+            });
+          }
+          return res;
+        })
+        .catch(() => caches.match(event.request))
+    );
     return;
   }
   event.respondWith(

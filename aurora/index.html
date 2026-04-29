@@ -445,6 +445,24 @@
     </div>
   </div>
 
+  <!-- App update (PWA / installed tab) -->
+  <div class="ar-modal" id="updateModal" aria-hidden="true">
+    <div class="ar-modal-card">
+      <header class="ar-modal-head">
+        <h3>עדכון זמין</h3>
+        <button class="ar-iconbtn-mini" data-action="dismiss-app-update" aria-label="סגור"><svg class="ic"><use href="#i-close"/></svg></button>
+      </header>
+      <div class="ar-ts-body">
+        <p>יש גרסה חדשה של Aurora. לחיצה על <strong>עדכן עכשיו</strong> מרעננת את האפליקציה ומבטיחה שתקבלי את השינויים (כולל במסך הבית / PWA).</p>
+        <p style="color:var(--text-3);font-size:0.9rem">גרסה מרוחקת: <span id="updateRemoteVersion">—</span></p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+          <button type="button" class="ar-btn ar-btn-primary" data-action="apply-app-update">עדכן עכשיו</button>
+          <button type="button" class="ar-btn" data-action="dismiss-app-update">אחר כך</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Install app modal -->
   <div class="ar-modal" id="installModal" aria-hidden="true">
     <div class="ar-modal-card">
