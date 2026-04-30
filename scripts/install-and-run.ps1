@@ -42,6 +42,37 @@ function Invoke-PipRequirements {
   }
 }
 
+function Install-DesktopShortcuts {
+  param([string]$Root)
+  try {
+    $desk = [Environment]::GetFolderPath('Desktop')
+    if (-not $desk) { return }
+    $wsh = New-Object -ComObject WScript.Shell
+    $serverBat = Join-Path $Root 'start-server-lan.bat'
+    $openBat = Join-Path $Root 'open-aurora.bat'
+    if (-not (Test-Path -LiteralPath $serverBat)) { return }
+    $lnk1 = Join-Path $desk 'Car Player server.lnk'
+    $s1 = $wsh.CreateShortcut($lnk1)
+    $s1.TargetPath = $serverBat
+    $s1.WorkingDirectory = $Root
+    $s1.WindowStyle = 1
+    $s1.Description = 'Car Player / Aurora — local server (keep window open)'
+    $s1.Save()
+    if (Test-Path -LiteralPath $openBat) {
+      $lnk2 = Join-Path $desk 'Aurora.lnk'
+      $s2 = $wsh.CreateShortcut($lnk2)
+      $s2.TargetPath = $openBat
+      $s2.WorkingDirectory = $Root
+      $s2.Description = 'פתיחת Aurora בדפדפן (השרת חייב לרוץ)'
+      $s2.Save()
+    }
+    Write-Host "נוצרו בשולחן העבודה: Car Player server.lnk ו-Aurora.lnk" -ForegroundColor Green
+  }
+  catch {
+    Write-Host "(לא נוצרו קיצורי דרך — אפשר ליצור ידנית ל-$Root\start-server-lan.bat)" -ForegroundColor Yellow
+  }
+}
+
 Write-Host "=== Car Player / Aurora - install and run ===" -ForegroundColor Cyan
 Write-Host "Install folder: $InstallPath"
 
@@ -74,6 +105,8 @@ try {
 
   Write-Host "Installing Python dependencies (first run may take a minute)..."
   Invoke-PipRequirements -Root $InstallPath
+
+  Install-DesktopShortcuts -Root $InstallPath
 
   Write-Host "Starting local server (new window). Leave that window open." -ForegroundColor Green
   $bat = Join-Path $InstallPath 'start-server-lan.bat'
