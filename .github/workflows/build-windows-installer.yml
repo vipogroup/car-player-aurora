@@ -23,9 +23,13 @@ jobs:
       - name: Exclude heavy optional paths from installer payload
         shell: pwsh
         run: |
-          if (Test-Path "offline_library") { Rename-Item -LiteralPath "offline_library" -NewName "_ci_exclude_offline_library" }
+          $stash = Join-Path $env:TEMP ("car-player-inno-stash-" + [Guid]::NewGuid().ToString("N"))
+          New-Item -ItemType Directory -Path $stash -Force | Out-Null
+          Add-Content -Path $env:GITHUB_ENV -Value "CAR_PLAYER_INNO_STASH=$stash"
+          if (Test-Path "offline_library") { Move-Item -LiteralPath "offline_library" -Destination (Join-Path $stash "offline_library") }
+          if (Test-Path ".venv") { Move-Item -LiteralPath ".venv" -Destination (Join-Path $stash "dot_venv") }
           foreach ($f in @("car-music-player.zip", "local-server-unblocked.zip")) {
-            if (Test-Path $f) { Rename-Item -LiteralPath $f -NewName ("_ci_exclude_" + $f) }
+            if (Test-Path $f) { Move-Item -LiteralPath $f -Destination (Join-Path $stash $f) }
           }
 
       - name: Compile .iss
@@ -40,11 +44,17 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          if (Test-Path "_ci_exclude_offline_library") { Rename-Item -LiteralPath "_ci_exclude_offline_library" -NewName "offline_library" }
+          $stash = $env:CAR_PLAYER_INNO_STASH
+          if (-not $stash -or -not (Test-Path $stash)) { exit 0 }
+          $lib = Join-Path $stash "offline_library"
+          $venv = Join-Path $stash "dot_venv"
+          if (Test-Path $lib) { Move-Item -LiteralPath $lib -Destination "offline_library" }
+          if (Test-Path $venv) { Move-Item -LiteralPath $venv -Destination ".venv" }
           foreach ($f in @("car-music-player.zip", "local-server-unblocked.zip")) {
-            $hid = "_ci_exclude_" + $f
-            if (Test-Path $hid) { Rename-Item -LiteralPath $hid -NewName $f }
+            $p = Join-Path $stash $f
+            if (Test-Path $p) { Move-Item -LiteralPath $p -Destination $f }
           }
+          Remove-Item -LiteralPath $stash -Recurse -Force -ErrorAction SilentlyContinue
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4

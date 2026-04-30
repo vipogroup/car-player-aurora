@@ -3,7 +3,7 @@
 ; Installs to %LOCALAPPDATA%\CarPlayer-Aurora (no admin). Requires Python 3.10+ on PATH.
 
 #define MyAppName "Car Player · Aurora"
-#define MyAppVersion "1.0.2"
+#define MyAppVersion "1.0.3"
 #define RepoRoot ".."
 
 [Setup]
@@ -21,7 +21,7 @@ Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=lowest
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayIcon={app}\car-music-icon.png
 SetupLogging=yes
 
@@ -33,8 +33,9 @@ Name: "desktopserver"; Description: "Desktop shortcut: start server"; GroupDescr
 Name: "desktopbrowser"; Description: "Desktop shortcut: open Aurora"; GroupDescription: "Shortcuts:"
 
 [Files]
+; Excludes: רשימה מופרדת בפסיקים בלבד (פסיק-עלית מפרק את כל ההחרגות — Inno מתעלם מהשאר).
 Source: "{#RepoRoot}\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion createallsubdirs; \
-  Excludes: ".git\*;.github\*;offline_library\*;*.mp4;*.pyc;__pycache__\*;.cursor\*;.claude\*;terminals\*;mcps\*;installer\Output\;installer\Output\*;car-music-player.zip;local-server-unblocked.zip;CarPlayerAurora-Setup.exe"
+  Excludes: ".git\*,.github\*,offline_library\*,*.mp4,*.pyc,__pycache__\*,.cursor\*,.claude\*,.venv\*,terminals\*,mcps\*,installer\Output\*,car-music-player.zip,local-server-unblocked.zip,CarPlayerAurora-Setup.exe"
 
 [Icons]
 Name: "{group}\Start Car Player server"; Filename: "{app}\start-server-lan.bat"; WorkingDir: "{app}"
@@ -44,7 +45,7 @@ Name: "{autodesktop}\Car Player server"; Filename: "{app}\start-server-lan.bat";
 Name: "{autodesktop}\Aurora"; Filename: "{app}\open-aurora.bat"; WorkingDir: "{app}"; Tasks: desktopbrowser
 
 [Run]
-Filename: "{app}\installer-postinstall.cmd"; WorkingDir: "{app}"; StatusMsg: "Installing Python packages..."; Flags: runhidden waituntilterminated
+Filename: "{app}\installer-postinstall.cmd"; WorkingDir: "{app}"; StatusMsg: "Installing Python (.venv)..."; Flags: waituntilterminated
 Filename: "{app}\start-server-lan.bat"; Description: "Start local server now"; WorkingDir: "{app}"; Flags: nowait postinstall skipifsilent shellexec
 
 [Code]
