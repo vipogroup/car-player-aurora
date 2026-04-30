@@ -12,7 +12,7 @@ try {
     Stop-Process -Id $x.OwningProcess -Force -ErrorAction SilentlyContinue
     Write-Host '[OK] Freed port 5600'
   } else {
-    Write-Host '(No listener on 5600)'
+    Write-Host '[i] Port 5600 is free (no old server to stop)'
   }
 } catch { }
 
