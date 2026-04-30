@@ -27,15 +27,19 @@ if not exist "requirements.txt" (
 
 echo Checking Python packages (yt-dlp)...
 python -c "import yt_dlp" 2>nul
-if errorlevel 1 (
-  py -3 -c "import yt_dlp" 2>nul
-)
+if errorlevel 1 py -3 -c "import yt_dlp" 2>nul
 if errorlevel 1 (
   echo.
-  echo [ERROR] Missing dependencies. In THIS folder run once:
+  echo [ERROR] חסרה חבילת yt-dlp ל-Python שמצא כאן.
+  echo תיקייה: %CD%
+  echo.
+  echo הריצי פעם אחת ב-PowerShell או cmd — בתיקייה הזאת:
   echo   pip install -r requirements.txt
-  echo   (or: py -3 -m pip install -r requirements.txt)
-  echo Then double-click start-server-lan.bat again.
+  echo אם לא עובד:
+  echo   py -3 -m pip install -r requirements.txt
+  echo.
+  echo אחרי שזה מסתיים בלי שגיאה — לחיצה כפולה שוב על start-server-lan.bat
+  echo.
   pause
   exit /b 1
 )
