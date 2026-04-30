@@ -20,6 +20,10 @@ const INSTALL_DISMISSED_KEY = 'aurora.installPromptDismissed';
 const BUNDLE_FP_KEY = 'aurora.uiBundleFingerprint';
 const LAST_APPLIED_BUNDLE_AT_KEY = 'aurora.lastBundleAppliedAt';
 const KEYS_RUN_MODE = 'aurora.runMode';
+const UI_SCALE_KEY = 'aurora.uiScalePct';
+const UI_SCALE_MIN = 70;
+const UI_SCALE_MAX = 140;
+const UI_SCALE_STEP = 5;
 /** GitHub API: latest release assets (public repo). Private repo → 404 without token — ניפול ל-PowerShell. */
 const GH_AURORA_RELEASES_API_LATEST =
   'https://api.github.com/repos/vipogroup/car-player-aurora/releases/latest';
@@ -102,6 +106,49 @@ function loadJSON(key, fallback) {
 
 function saveJSON(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+}
+
+function clampUiScalePct(p) {
+  const n = Math.round(Number(p) / UI_SCALE_STEP) * UI_SCALE_STEP;
+  if (!Number.isFinite(n)) return 100;
+  return Math.min(UI_SCALE_MAX, Math.max(UI_SCALE_MIN, n));
+}
+
+let uiScalePct = 100;
+
+function applyUiScale(pct) {
+  uiScalePct = clampUiScalePct(pct);
+  saveJSON(UI_SCALE_KEY, uiScalePct);
+  const root = document.documentElement;
+  const z = uiScalePct / 100;
+  if (typeof CSS !== 'undefined' && CSS.supports?.('zoom', '1')) {
+    root.style.zoom = `${uiScalePct}%`;
+    root.style.removeProperty('transform');
+    root.style.removeProperty('transform-origin');
+    root.style.removeProperty('width');
+    root.style.removeProperty('min-height');
+  } else {
+    root.style.removeProperty('zoom');
+    root.style.transform = `scale(${z})`;
+    root.style.transformOrigin = 'top center';
+    root.style.width = `${100 / z}%`;
+    root.style.minHeight = `${100 / z}vh`;
+  }
+  const lbl = $('#uiScaleLabel');
+  if (lbl) lbl.textContent = `${uiScalePct}%`;
+  const po = $('#playerOverlay');
+  if (po) {
+    const d = po.querySelector('[data-action="ui-scale-down"]');
+    const u = po.querySelector('[data-action="ui-scale-up"]');
+    if (d) d.disabled = uiScalePct <= UI_SCALE_MIN;
+    if (u) u.disabled = uiScalePct >= UI_SCALE_MAX;
+  }
+}
+
+function initUiScale() {
+  const v = loadJSON(UI_SCALE_KEY, 100);
+  const n = typeof v === 'number' ? v : 100;
+  applyUiScale(n);
 }
 
 function migrateOrSeed() {
@@ -216,6 +263,45 @@ function playerVideoShell() {
   return $('#playerArtWrap')?.closest('.ar-player-art-shell') || null;
 }
 
+function playerStageEl() {
+  return $('.ar-player-stage');
+}
+
+function bentoArtSlotEl() {
+  return $('#bentoArtSlot');
+}
+
+/**
+ * מזיז את .ar-player-art-shell (כולל <video>#audio) בין שחקן מלא לכרטיס ״מתנגן עכשיו״ בבית.
+ * כשהנגן המלא סגור והווידאו פעיל — הווידאו נראה בבנטו; אחרת נשאר בשלב (מחוץ למסך) כדי שלא ייעלם ב-display:none של דפים אחרים.
+ */
+function relocateVideoShellForHomePreview() {
+  const sh = playerVideoShell();
+  const stage = playerStageEl();
+  const slot = bentoArtSlotEl();
+  if (!sh || !stage) return;
+  if (state.playerOpen) {
+    if (sh.parentNode !== stage) stage.insertBefore(sh, stage.firstElementChild || null);
+    return;
+  }
+  if (state.view !== 'home') {
+    if (sh.parentNode !== stage) stage.insertBefore(sh, stage.firstElementChild || null);
+    return;
+  }
+  if (sh.classList.contains('is-video-visible') && slot) {
+    if (sh.parentNode !== slot) slot.appendChild(sh);
+  } else if (sh.parentNode !== stage) {
+    stage.insertBefore(sh, stage.firstElementChild || null);
+  }
+  requestAnimationFrame(() => {
+    try {
+      visualizer?.resize();
+    } catch (_) {
+      /* ignore */
+    }
+  });
+}
+
 /** מציג את הווידאו באזור האמנות כשהזרם כולל מסלול וידאו (YouTube / אופליין MP4). */
 function syncPlayerVideoShell() {
   const sh = playerVideoShell();
@@ -228,6 +314,7 @@ function syncPlayerVideoShell() {
   } catch (_) {
     sh.classList.remove('is-video-visible');
   }
+  relocateVideoShellForHomePreview();
 }
 let preampNode = null;
 let eqNodes = [];
@@ -478,6 +565,7 @@ function setView(view) {
   document.body.classList.remove('is-nav-open');
   state.navOpen = false;
   $('.ar-app').classList.remove('is-nav-open');
+  relocateVideoShellForHomePreview();
 }
 
 // ============================================================
@@ -1675,8 +1763,20 @@ async function flowNewComputerSetup() {
   }
 }
 
-function openPlayer() { state.playerOpen = true; $('.ar-app').classList.add('is-player-open'); }
-function closePlayer() { state.playerOpen = false; $('.ar-app').classList.remove('is-player-open'); }
+function openPlayer() {
+  const sh = playerVideoShell();
+  const stage = playerStageEl();
+  if (sh && stage && sh.parentNode !== stage) {
+    stage.insertBefore(sh, stage.firstElementChild || null);
+  }
+  state.playerOpen = true;
+  $('.ar-app').classList.add('is-player-open');
+}
+function closePlayer() {
+  state.playerOpen = false;
+  $('.ar-app').classList.remove('is-player-open');
+  relocateVideoShellForHomePreview();
+}
 function openQueue() {
   state.queueOpen = true;
   $('.ar-app').classList.add('is-queue-open');
@@ -1897,6 +1997,8 @@ function bindEvents() {
         case 'add-to-playlist': if (state.currentTrack) addToPlaylist(state.currentTrack.id); return;
         case 'save-current-offline': saveCurrentOffline(); return;
         case 'toggle-quality': toggleQuality(); return;
+        case 'ui-scale-down': applyUiScale(uiScalePct - UI_SCALE_STEP); return;
+        case 'ui-scale-up': applyUiScale(uiScalePct + UI_SCALE_STEP); return;
         case 'new-playlist': createPlaylist(); return;
         case 'show-recents': setView('library'); state.libraryFilter = 'recent'; renderLibrary(); return;
         case 'back-playlists': setView('playlists'); return;
@@ -2103,6 +2205,7 @@ function deletePlaylist(plId) {
 // ============================================================
 async function init() {
   buildIconSprite();
+  initUiScale();
   extractPalette('').then((p) => applyTheme(p, { instant: true })).catch(() => {});
 
   await probeEnvironment();

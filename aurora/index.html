@@ -117,7 +117,7 @@
         </div>
         <div class="ar-hero-quick" id="heroQuick"></div>
       </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 18px">
+      <div class="ar-home-setup-row">
         <button class="ar-btn ar-btn-primary" data-action="open-local-setup"><svg class="ic"><use href="#i-download"/></svg>התקנה למחשב חדש</button>
         <button class="ar-btn" data-action="open-lan-info"><svg class="ic"><use href="#i-wifi"/></svg>חיבור מובייל באותה רשת</button>
       </div>
@@ -137,6 +137,7 @@
         <div class="ar-bento" id="bentoGrid">
           <div class="ar-bento-tile ar-bento-hero" data-bento="now-playing">
             <div class="ar-bento-bg" id="bentoNowBg"></div>
+            <div class="ar-bento-art-mount" id="bentoArtSlot" data-action="open-player" aria-label="פתח נגן מלא"></div>
             <div class="ar-bento-fg">
               <div class="ar-bento-eyebrow">מתנגן עכשיו</div>
               <div class="ar-bento-title" id="bentoNowTitle">לא נבחר שיר</div>
@@ -290,6 +291,16 @@
           <div class="ar-player-art-fallback"><svg class="ic"><use href="#i-disc"/></svg></div>
           <!-- בלי crossorigin: סטרימים מ-googlevideo לרוב חסומים ב-CORS עם anonymous ומונעים play() -->
           <video id="audio" class="ar-player-video" preload="auto" playsinline webkit-playsinline></video>
+        </div>
+      </div>
+
+      <div class="ar-player-toolstrip" role="toolbar" aria-label="גודל תצוגת הממשק">
+        <span class="ar-player-toolstrip-icon" aria-hidden="true"><svg class="ic"><use href="#i-list"/></svg></span>
+        <span class="ar-player-toolstrip-label">גודל ממשק</span>
+        <div class="ar-player-ui-scale" role="group" aria-label="הגדלה או הקטנה של כל הממשק">
+          <button type="button" class="ar-iconbtn-mini" data-action="ui-scale-down" aria-label="הקטן ממשק" title="הקטן ממשק"><svg class="ic"><use href="#i-minus"/></svg></button>
+          <span class="ar-ui-scale-label" id="uiScaleLabel">100%</span>
+          <button type="button" class="ar-iconbtn-mini" data-action="ui-scale-up" aria-label="הגדל ממשק" title="הגדל ממשק"><svg class="ic"><use href="#i-plus"/></svg></button>
         </div>
       </div>
 
