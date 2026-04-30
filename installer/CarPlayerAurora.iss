@@ -29,6 +29,7 @@ SetupLogging=yes
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
+; בלי Flags: unchecked — שתי המשימות מסומנות כברירת מחדל בהתקנה ראשונה (שולחן עבודה). נעיצה לשורת המשימות נשארת פעולה ידנית ב-Windows.
 Name: "desktopserver"; Description: "Desktop shortcut: start server"; GroupDescription: "Shortcuts:"
 Name: "desktopbrowser"; Description: "Desktop shortcut: open Aurora"; GroupDescription: "Shortcuts:"
 
