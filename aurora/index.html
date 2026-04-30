@@ -288,6 +288,8 @@
         <div class="ar-player-art" id="playerArtWrap">
           <img id="playerArt" alt="" />
           <div class="ar-player-art-fallback"><svg class="ic"><use href="#i-disc"/></svg></div>
+          <!-- בלי crossorigin: סטרימים מ-googlevideo לרוב חסומים ב-CORS עם anonymous ומונעים play() -->
+          <video id="audio" class="ar-player-video" preload="auto" playsinline webkit-playsinline></video>
         </div>
       </div>
 
@@ -445,6 +447,7 @@
           <a class="ar-btn ar-btn-primary" href="https://github.com/vipogroup/car-player-aurora/releases/latest/download/CarPlayerAurora-Setup.exe">הורד CarPlayerAurora-Setup.exe</a>
           <a class="ar-btn" href="https://github.com/vipogroup/car-player-aurora/releases" target="_blank" rel="noopener">עמוד גרסאות</a>
         </div>
+        <p style="color:var(--text-2);font-size:0.88rem">אם לחיצה כפולה על ה־exe <strong>לא מראה חלון</strong>: לחצי ימין על הקובץ → <strong>מאפיינים</strong> → סמני <strong>שחרור חסימה</strong> אם מופיע; אם נפתח חלון כחול של Windows — <strong>מידע נוסף</strong> → <strong>הרץ בכל זאת</strong>. לפעמים חלון האשף נפתח <strong>מאחורי הדפדפן</strong> — בדקי בשורת המשימות. לוג לאבחון: ב־cmd בתיקיית ההורדות הריצי <code dir="ltr">CarPlayerAurora-Setup.exe /LOG=%TEMP%\aurora-inno.log</code> ואז פתחי את קובץ הלוג ב־<code dir="ltr">%TEMP%</code>.</p>
         <p style="color:var(--text-3);font-size:0.88rem">אם ההורדה מחזירה 404: ב־<strong>car-player-aurora</strong> → <strong>Actions → Build Windows installer → Run workflow</strong> (פעם אחת). אחרי בנייה מוצלחת הקישור למעלה עובד. עד אז: שלב ב׳.</p>
         <p><strong>שלב ב׳ — PowerShell (אם אין .exe)</strong></p>
         <ol>
@@ -592,10 +595,6 @@
 
   <!-- Toasts -->
   <div class="ar-toasts" id="toasts" aria-live="polite"></div>
-
-  <!-- Hidden video element -->
-  <!-- בלי crossorigin: סטרימים מ-googlevideo לרוב חסומים ב-CORS עם anonymous ומונעים play() -->
-  <video id="audio" preload="auto" playsinline webkit-playsinline style="display:none"></video>
 
   <script>
     window.__AURORA__ = {

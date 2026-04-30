@@ -3,7 +3,7 @@
 ; Installs to %LOCALAPPDATA%\CarPlayer-Aurora (no admin). Requires Python 3.10+ on PATH.
 
 #define MyAppName "Car Player · Aurora"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define RepoRoot ".."
 
 [Setup]
@@ -13,6 +13,7 @@ AppVersion={#MyAppVersion}
 AppPublisher=vipogroup
 DefaultDirName={localappdata}\CarPlayer-Aurora
 DefaultGroupName=Car Player
+DisableWelcomePage=no
 DisableProgramGroupPage=yes
 OutputDir=Output
 OutputBaseFilename=CarPlayerAurora-Setup
@@ -47,6 +48,9 @@ Filename: "{app}\installer-postinstall.cmd"; WorkingDir: "{app}"; StatusMsg: "In
 Filename: "{app}\start-server-lan.bat"; Description: "Start local server now"; WorkingDir: "{app}"; Flags: nowait postinstall skipifsilent shellexec
 
 [Code]
+var
+  BroughtWizardToFront: Boolean;
+
 function PythonOnPath: Boolean;
 var
   R: Integer;
@@ -60,6 +64,24 @@ function InitializeSetup: Boolean;
 begin
   { אל תעצור כאן — אחרת נראה כאילו "שום דבר לא נפתח" (הודעה קטנה מאחורי חלונות / SmartScreen). }
   Result := true;
+end;
+
+procedure InitializeWizard;
+begin
+  BroughtWizardToFront := False;
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  { אחרי שהאשף כבר מוצג — מביאים לחזית (דפדפן/הורדות מסתירים מאחור). }
+  if not BroughtWizardToFront then
+  begin
+    BroughtWizardToFront := True;
+    try
+      WizardForm.BringToFront;
+    except
+    end;
+  end;
 end;
 
 function NextButtonClick(CurPageID: Integer): Boolean;
