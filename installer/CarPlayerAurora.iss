@@ -3,7 +3,7 @@
 ; Installs to %LOCALAPPDATA%\CarPlayer-Aurora (no admin). Requires Python 3.10+ on PATH.
 
 #define MyAppName "Car Player · Aurora"
-#define MyAppVersion "1.0.3"
+#define MyAppVersion "1.0.4"
 #define RepoRoot ".."
 
 [Setup]

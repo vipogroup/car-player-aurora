@@ -1,5 +1,5 @@
 {
-  "appVersion": "2.4.0",
-  "updatedAt": "2026-04-27T05:08:00+03:00",
-  "notes": "Public page switched to new cyan UI"
+  "appVersion": "2.4.1",
+  "updatedAt": "2026-04-29T12:00:00+03:00",
+  "notes": "Installer 1.0.4: post-install UX, Inno excludes/build, sidebar launch-after-reboot help"
 }

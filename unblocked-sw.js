@@ -1,4 +1,4 @@
-const UNBLOCKED_PWA_VERSION = 5;
+const UNBLOCKED_PWA_VERSION = 7;
 const CACHE = 'unblocked-pwa-v' + UNBLOCKED_PWA_VERSION;
 self.addEventListener('install', (event) => {
   event.waitUntil(

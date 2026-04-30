@@ -54,7 +54,7 @@ try:
 except ValueError:
     PORT = 5600
 # גרסת חבילת "שרת מקומי" — משווה מול local-server-version.json (מאגר car-).
-UNBLOCKED_LOCAL_SERVER_VERSION = "1.0.2"
+UNBLOCKED_LOCAL_SERVER_VERSION = "1.0.4"
 REMOTE_LOCAL_SERVER_VERSION_URL = (
     "https://raw.githubusercontent.com/vipogroup/car-/main/local-server-version.json"
 )
@@ -81,6 +81,19 @@ AURORA_MIME = {
     ".webp": "image/webp",
     ".woff2": "font/woff2",
 }
+# כשהדף נטען מ־/ , יחסי ./styles.css הופך ל־/styles.css — כינויים לאחור למטמון HTML ישן.
+AURORA_ROOT_STATIC_NAMES = frozenset(
+    {
+        "styles.css",
+        "app.js",
+        "icons.js",
+        "color.js",
+        "visualizer.js",
+        "device-offline.js",
+        "client-version.json",
+        "bundle-fingerprint.json",
+    }
+)
 
 
 def aurora_template_path() -> str:
@@ -101,6 +114,15 @@ def build_html_aurora() -> str:
         lan = _guess_lan_ipv4()
         if lan:
             lan_url = f"http://{lan}:{PORT}/"
+    # הדף נטען מ־/ אבל נכסי Aurora מוגשים רק תחת /aurora/ — יחסי ./styles.css הופך ל־/styles.css (404).
+    # ב־GitHub Pages הקובץ יושב תחת נתיב תיקייה אז ./ נשאר נכון; כאן מתקנים רק בפלט השרת.
+    for _old, _new in (
+        ('href="./styles.css"', 'href="/aurora/styles.css"'),
+        ("href='./styles.css'", "href='/aurora/styles.css'"),
+        ('src="./app.js"', 'src="/aurora/app.js"'),
+        ("src='./app.js'", "src='/aurora/app.js'"),
+    ):
+        tpl = tpl.replace(_old, _new)
     return (
         tpl
         .replace("{{PLAYLIST_JSON}}", json.dumps(PLAYLIST, ensure_ascii=False))
@@ -125,7 +147,7 @@ def _safe_aurora_path(rel: str) -> Optional[str]:
     return target
 
 # Service Worker (PWA — "התקנה" למסך הבית). עדכן מספר אם משנים לוגיקת מטמון.
-UNBLOCKED_PWA_VERSION = 5
+UNBLOCKED_PWA_VERSION = 7
 UNBLOCKED_SW_SOURCE = """
 const UNBLOCKED_PWA_VERSION = %d;
 const CACHE = 'unblocked-pwa-v' + UNBLOCKED_PWA_VERSION;
@@ -6233,7 +6255,23 @@ class Handler(BaseHTTPRequestHandler):
         self._send_aurora_static(path, send_body=send_body)
         return True
 
+    def _try_serve_aurora_root_alias(self, send_body: bool) -> bool:
+        parsed = urllib.parse.urlparse(self.path)
+        p = parsed.path
+        if len(p) < 2 or p[0] != "/":
+            return False
+        name = p[1:]
+        if "/" in name or name not in AURORA_ROOT_STATIC_NAMES:
+            return False
+        path = _safe_aurora_path(name)
+        if not path:
+            return False
+        self._send_aurora_static(path, send_body=send_body)
+        return True
+
     def do_HEAD(self):
+        if self._try_serve_aurora_root_alias(False):
+            return
         if self._try_serve_aurora(False):
             return
         self.send_response(404)
@@ -6264,6 +6302,9 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("X-Unblocked-UI", ui_label)
             self.end_headers()
             self.wfile.write(body)
+            return
+
+        if self._try_serve_aurora_root_alias(True):
             return
 
         if self._try_serve_aurora(True):

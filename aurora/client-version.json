@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "updatedAt": "2026-04-29",
   "note": "Optional fallback only when the server does not send ETag on app.js (HEAD). Prefer automatic bundle-fingerprint.json (CI) + ETag (local server)."
 }
