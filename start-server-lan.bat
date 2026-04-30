@@ -10,24 +10,41 @@ echo   For phone + PC on same Wi-Fi
 echo ========================================
 echo.
 
-where python >nul 2>&1
-if errorlevel 1 (
-  echo [ERROR] Python not found in PATH.
-  echo Install Python 3.10+ with "Add python.exe to PATH".
-  echo.
-  echo Suggested ^(PowerShell or CMD as Administrator — machine-wide^):
-  echo   winget install Python.Python.3.13 --scope machine
-  echo If that fails or no admin rights ^(current user only^):
-  echo   winget install Python.Python.3.13 --scope user
-  echo Then close this window, close all terminals, and run this .bat again.
-  echo If winget is missing: install from https://www.python.org/downloads/
+if not exist "requirements.txt" (
+  echo [ERROR] Missing requirements.txt in this folder.
+  echo Extract the zip first, then run this file again.
   pause
   exit /b 1
 )
 
-if not exist "requirements.txt" (
-  echo [ERROR] Missing requirements.txt in this folder.
-  echo Extract the zip first, then run this file again.
+set "PYEXE="
+if exist ".venv\Scripts\python.exe" set "PYEXE=.venv\Scripts\python.exe"
+
+if defined PYEXE (
+  echo Using local Python: .venv
+  "%PYEXE%" -c "import yt_dlp" 2>nul
+  if errorlevel 1 (
+    echo.
+    echo [ERROR] חבילות חסרות ב-.venv. הריצי מהתיקייה:
+    echo   installer-postinstall.cmd
+    echo או התקיני מחדש את CarPlayerAurora-Setup.exe
+    pause
+    exit /b 1
+  )
+  goto RUN_SERVER
+)
+
+where python >nul 2>&1
+if errorlevel 1 (
+  echo [ERROR] Python not found in PATH and no .venv here.
+  echo התקיני Python 3.10+ עם PATH, או הריצי installer-postinstall.cmd אחרי התקנה מלאה.
+  echo.
+  echo PowerShell או CMD כמנהל ^(מומלץ — לכל המחשב^):
+  echo   winget install Python.Python.3.13 --scope machine
+  echo בלי מנהל ^(משתמש נוכחי בלבד^):
+  echo   winget install Python.Python.3.13 --scope user
+  echo אחרי ההתקנה סגרי את כל חלונות המסוף והפעילי שוב את הקובץ.
+  echo אם אין winget: https://www.python.org/downloads/
   pause
   exit /b 1
 )
@@ -37,26 +54,20 @@ python -c "import yt_dlp" 2>nul
 if errorlevel 1 py -3 -c "import yt_dlp" 2>nul
 if errorlevel 1 (
   echo.
-  echo [ERROR] חסרה חבילת yt-dlp ל-Python שמצא כאן.
-  echo תיקייה: %CD%
-  echo.
-  echo הריצי פעם אחת ב-PowerShell או cmd — בתיקייה הזאת:
+  echo [ERROR] חסרה חבילת yt-dlp. אפשרות א׳ — הריצי בתיקייה:
+  echo   installer-postinstall.cmd
+  echo אפשרות ב׳ — ידנית:
   echo   pip install -r requirements.txt
-  echo אם לא עובד:
-  echo   py -3 -m pip install -r requirements.txt
-  echo.
-  echo אחרי שזה מסתיים בלי שגיאה — לחיצה כפולה שוב על start-server-lan.bat
-  echo.
   pause
   exit /b 1
 )
 
+:RUN_SERVER
 set "OPEN_BROWSER=1"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0restart-player-lan.ps1"
 if errorlevel 1 (
   echo.
   echo [ERROR] Server exited with an error. Scroll up for Python messages.
-  echo If packages are missing: pip install -r requirements.txt
   pause
   exit /b 1
 )
