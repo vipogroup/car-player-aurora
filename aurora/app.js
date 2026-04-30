@@ -211,6 +211,24 @@ function applyEnvironmentUI() {
 /* let — אחרי מעבר מ-Web-Audio לניגון ישיר מחליפים את ה-<video> (פעם אחת לכל מקור) */
 let audio = $('#audio');
 let audioContext = null;
+
+function playerVideoShell() {
+  return $('#playerArtWrap')?.closest('.ar-player-art-shell') || null;
+}
+
+/** מציג את הווידאו באזור האמנות כשהזרם כולל מסלול וידאו (YouTube / אופליין MP4). */
+function syncPlayerVideoShell() {
+  const sh = playerVideoShell();
+  if (!sh) return;
+  try {
+    const w = audio.videoWidth;
+    const h = audio.videoHeight;
+    if (w > 0 && h > 0) sh.classList.add('is-video-visible');
+    else sh.classList.remove('is-video-visible');
+  } catch (_) {
+    sh.classList.remove('is-video-visible');
+  }
+}
 let preampNode = null;
 let eqNodes = [];
 let compNode = null;
@@ -258,10 +276,10 @@ function resetAudioForNativePlayback() {
   if (!parent) return;
   const nu = document.createElement('video');
   nu.id = 'audio';
+  nu.className = 'ar-player-video';
   nu.setAttribute('preload', 'auto');
   nu.playsInline = true;
   nu.setAttribute('webkit-playsinline', '');
-  nu.style.display = 'none';
   nu.volume = state.volume;
   parent.replaceChild(nu, old);
   audio = nu;
@@ -730,6 +748,7 @@ async function playTrack(track, opts = {}) {
   }
 
   state.currentTrack = track;
+  playerVideoShell()?.classList.remove('is-video-visible');
   updateNowPlayingUI();
   toast(`טוען: ${track.name}`);
 
@@ -793,10 +812,13 @@ async function playTrack(track, opts = {}) {
     themeFromTrack(track);
     updateMediaSession(track);
     if (visualizer) visualizer.start();
+    syncPlayerVideoShell();
+    setTimeout(syncPlayerVideoShell, 500);
   } catch (e) {
     toast(`לא הצלחתי להריץ: ${e.message}`, 'error');
     state.isPlaying = false;
     document.body.classList.remove('is-playing');
+    playerVideoShell()?.classList.remove('is-video-visible');
   }
 }
 
@@ -951,9 +973,12 @@ function bindAudio() {
     $('#volumeFill').style.width = `${v * 100}%`;
   });
   audio.addEventListener('error', () => {
+    playerVideoShell()?.classList.remove('is-video-visible');
     toast('שגיאת ניגון — מנסה את הבא', 'error');
     setTimeout(nextTrack, 800);
   });
+  audio.addEventListener('loadedmetadata', () => syncPlayerVideoShell());
+  audio.addEventListener('emptied', () => playerVideoShell()?.classList.remove('is-video-visible'));
 }
 
 function formatTime(s) {
@@ -1590,23 +1615,29 @@ function copyRunCommand() {
     .catch(() => toast('העתקה נכשלה', 'error'));
 }
 
-/** מחזיר true אם נמצא נכס וניסינו להתחיל הורדה (URL אמיתי מה-API). */
+/** מחזיר true אם ניסינו להתחיל הורדה (URL מה-API או נפילה ל־releases/latest/download — אותו קובץ כמו כפתור ״הורד״ במודאל). */
 async function tryDownloadInstallerExeFromRelease() {
+  let url = null;
   try {
     const r = await fetch(GH_AURORA_RELEASES_API_LATEST, {
       headers: { Accept: 'application/vnd.github+json' },
       cache: 'no-store',
     });
-    if (!r.ok) return false;
-    const data = await r.json();
-    const asset = (data.assets || []).find((a) => a.name === 'CarPlayerAurora-Setup.exe');
-    const url = asset?.browser_download_url;
-    if (!url || typeof url !== 'string') return false;
+    if (r.ok) {
+      const data = await r.json();
+      const asset = (data.assets || []).find((a) => a.name === 'CarPlayerAurora-Setup.exe');
+      const fromApi = asset?.browser_download_url;
+      if (fromApi && typeof fromApi === 'string') url = fromApi;
+    }
+  } catch {
+    /* ignore */
+  }
+  if (!url) url = WINDOWS_INSTALLER_DOWNLOAD_URL;
+  try {
     const a = document.createElement('a');
     a.href = url;
     a.download = 'CarPlayerAurora-Setup.exe';
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
+    // בלי target=_blank — מפחית טאב ריק; ההורדה היא אותו נכס כמו בקישור המודאל.
     document.body.appendChild(a);
     a.click();
     setTimeout(() => { try { a.remove(); } catch (_) { /* ignore */ } }, 500);
