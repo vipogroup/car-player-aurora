@@ -1,6 +1,6 @@
 # Installs Car Player / Aurora from GitHub (main) and starts the full local server.
 # Run once: irm https://raw.githubusercontent.com/vipogroup/car-player-aurora/main/scripts/install-and-run.ps1 | iex
-# Requires: Windows, Python 3.10+ on PATH (winget install Python.Python.3.13)
+# Requires: Windows, Python 3.10+ on PATH (e.g. winget install Python.Python.3.13 --scope machine)
 
 param(
   [string]$InstallPath = "",
@@ -77,9 +77,12 @@ Write-Host "=== Car Player / Aurora - install and run ===" -ForegroundColor Cyan
 Write-Host "Install folder: $InstallPath"
 
 if (-not (Test-PythonAvailable)) {
-  Write-Host "[ERROR] Python not found. Install with (then reopen PowerShell):" -ForegroundColor Red
-  Write-Host "  winget install Python.Python.3.13" -ForegroundColor Yellow
-  Write-Host "Enable 'Add Python to PATH' in the installer." -ForegroundColor Yellow
+  Write-Host "[ERROR] Python not found. Install (then close all PowerShell/CMD windows and run this script again):" -ForegroundColor Red
+  Write-Host "  As Administrator (machine-wide):" -ForegroundColor Yellow
+  Write-Host "    winget install Python.Python.3.13 --scope machine" -ForegroundColor Yellow
+  Write-Host "  Or current user only:" -ForegroundColor Yellow
+  Write-Host "    winget install Python.Python.3.13 --scope user" -ForegroundColor Yellow
+  Write-Host "Enable 'Add python.exe to PATH' in the Python installer. If winget is missing, install from python.org." -ForegroundColor Yellow
   exit 1
 }
 

@@ -13,7 +13,14 @@ echo.
 where python >nul 2>&1
 if errorlevel 1 (
   echo [ERROR] Python not found in PATH.
-  echo Install Python 3.10+ and enable "Add Python to PATH".
+  echo Install Python 3.10+ with "Add python.exe to PATH".
+  echo.
+  echo Suggested ^(PowerShell or CMD as Administrator — machine-wide^):
+  echo   winget install Python.Python.3.13 --scope machine
+  echo If that fails or no admin rights ^(current user only^):
+  echo   winget install Python.Python.3.13 --scope user
+  echo Then close this window, close all terminals, and run this .bat again.
+  echo If winget is missing: install from https://www.python.org/downloads/
   pause
   exit /b 1
 )

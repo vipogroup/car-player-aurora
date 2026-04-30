@@ -438,7 +438,7 @@
         <p style="color:var(--text-2);font-size:0.9rem">עם לחיצה על ״התקנה למחשב חדש״: <strong>מועתקת פקודת PowerShell</strong> (תמיד עובדת אחרי Python). אם ב-GitHub יש Release עם המתקין — גם <strong>מתחילה הורדת ה־exe</strong>. אם לא — פתחי PowerShell והדביקי.</p>
         <p><strong>שלב א׳ — מתקין Windows (מומלץ)</strong></p>
         <ol>
-          <li>התקיני <strong>Python 3.10+</strong> עם <strong>Add python.exe to PATH</strong> (אם חסר): <code dir="ltr">winget install Python.Python.3.13</code> — ואז הפעילי מחדש את המחשב או לפחות סגרי את כל חלונות PowerShell.</li>
+          <li>התקיני <strong>Python 3.10+</strong> עם <strong>Add python.exe to PATH</strong> (אם חסר): ב־PowerShell או CMD <strong>כמנהל</strong> — <code dir="ltr">winget install Python.Python.3.13 --scope machine</code> (לכל המחשב). בלי מנהל: <code dir="ltr">winget install Python.Python.3.13 --scope user</code>. אחרי ההתקנה — סגרי את כל חלונות PowerShell/CMD (או הפעילי מחדש את המחשב) ואז הריצי שוב את המתקין.</li>
           <li>הורידי את הקובץ <code dir="ltr">CarPlayerAurora-Setup.exe</code>, הריצי אותו ואשרי את אשף ההתקנה של Windows. בסוף ייפתחו חלון שרת (השאירי פתוח) ודפדפן עם Aurora.</li>
           <li><strong>אחרי הפעלה מחדש של המחשב</strong> — ההפעלה לא בדפדפן בלבד: צריך שוב להריץ את השרת.
             <ul style="margin:8px 0 0;padding-inline-start:1.2rem;color:var(--text-2);font-size:0.92rem">
