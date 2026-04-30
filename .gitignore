@@ -7,3 +7,6 @@ offline_library/
 
 # Inno Setup output
 installer/Output/
+
+# סביבת Python מקומית אחרי installer-postinstall / התקנה
+.venv/
